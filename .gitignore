@@ -1,0 +1,2 @@
+# MCP config with secrets - copy from .cursor/mcp.json.example and add your token
+.cursor/mcp.json
