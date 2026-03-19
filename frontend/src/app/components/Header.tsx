@@ -24,7 +24,7 @@ export function Header() {
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <BookOpen className="h-6 w-6 text-blue-600" />
-            <span className="font-semibold text-lg">Bible Memory</span>
+            <span className="font-semibold text-base sm:text-lg">Bible Memory</span>
           </Link>
 
           {/* Desktop Navigation - flex max-md:hidden for Edge compatibility (avoids hidden+md:flex specificity issues) */}
