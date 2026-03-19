@@ -26,10 +26,10 @@ export function Collections() {
   // Redirect if not logged in
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 text-sm sm:text-base">
         <Card>
           <CardContent className="py-8 text-center">
-            <p className="text-gray-600 mb-4">Please log in to view collections</p>
+            <p className="text-gray-600 mb-4 text-sm sm:text-base">Please log in to view collections</p>
             <Button onClick={() => navigate('/login')}>Go to Login</Button>
           </CardContent>
         </Card>
@@ -73,18 +73,18 @@ export function Collections() {
   );
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 text-sm sm:text-base">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Collections */}
         <Card>
           <CardHeader>
-            <CardTitle>My Collections</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-base">My Collections</CardTitle>
+            <CardDescription className="text-sm">
               Create collections to group verses by topic or study plan
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Input
                 placeholder="Collection name (e.g., Romans 8)"
                 value={newCollectionName}
@@ -100,7 +100,7 @@ export function Collections() {
             </div>
 
             {currentCollections.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 text-sm sm:text-base">
                 <FolderOpen className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>No collections yet. Create one to get started!</p>
               </div>
@@ -115,7 +115,7 @@ export function Collections() {
                       onClick={() => navigate(`/collections/${collection.id}`)}
                       className="flex-1 text-left"
                     >
-                      <h3 className="font-semibold">{collection.name}</h3>
+                      <h3 className="text-sm sm:text-base font-semibold text-gray-800">{collection.name}</h3>
                     </button>
                     <Button
                       variant="ghost"
