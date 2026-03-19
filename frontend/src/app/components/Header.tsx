@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/button';
@@ -26,8 +27,8 @@ export function Header() {
             <span className="font-semibold text-lg">Bible Memory</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-4">
+          {/* Desktop Navigation - flex max-md:hidden for Edge compatibility (avoids hidden+md:flex specificity issues) */}
+          <nav className="flex max-md:hidden items-center gap-4">
             {user ? (
               <>
                 <Link to="/read">
