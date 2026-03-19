@@ -4,7 +4,7 @@ import { BOOKS, CHAPTERS_PER_BOOK } from '../../lib/bible-books';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 // Parse ESV text format: "[1] In the beginning... [2] The earth..."
@@ -115,23 +115,25 @@ export function BibleReader() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 text-sm sm:text-base">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Navigation Controls */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle>Read Scripture</CardTitle>
+        <Card className="gap-4">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pt-3 pb-2">
+            <CardTitle className="text-base">Read Scripture</CardTitle>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowNavigation(!showNavigation)}
               aria-label={showNavigation ? 'Hide navigation' : 'Show navigation'}
             >
-              {showNavigation ? (
-                <ChevronUp className="h-5 w-5" />
-              ) : (
+              <motion.span
+                animate={{ rotate: showNavigation ? 180 : 0 }}
+                transition={{ duration: 0.2, ease: 'easeInOut' }}
+                className="inline-flex"
+              >
                 <ChevronDown className="h-5 w-5" />
-              )}
+              </motion.span>
             </Button>
           </CardHeader>
           <AnimatePresence initial={false}>
@@ -187,30 +189,36 @@ export function BibleReader() {
                   </div>
 
                   {/* Previous/Next Chapter Buttons */}
-                  <div className="flex justify-between items-center pt-2">
+                  <div className="flex flex-wrap justify-between items-center gap-2 pt-2 min-w-0">
                     <Button
                       variant="outline"
+                      size="sm"
+                      className="shrink-0"
                       onClick={handlePreviousChapter}
                       disabled={selectedBook === BOOKS[0] && currentChapter === 1}
                     >
-                      <ChevronLeft className="h-4 w-4 mr-2" />
-                      Previous Chapter
+                      <ChevronLeft className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Previous Chapter</span>
+                      <span className="sm:hidden">Prev</span>
                     </Button>
                     
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600 shrink-0 text-center order-last sm:order-none w-full sm:w-auto">
                       {selectedBook} {currentChapter}
                     </div>
                     
                     <Button
                       variant="outline"
+                      size="sm"
+                      className="shrink-0"
                       onClick={handleNextChapter}
                       disabled={
                         selectedBook === BOOKS[BOOKS.length - 1] && 
                         currentChapter === maxChapter
                       }
                     >
-                      Next Chapter
-                      <ChevronRight className="h-4 w-4 ml-2" />
+                      <span className="hidden sm:inline">Next Chapter</span>
+                      <span className="sm:hidden">Next</span>
+                      <ChevronRight className="h-4 w-4 sm:ml-2" />
                     </Button>
                   </div>
                 </CardContent>
@@ -220,13 +228,13 @@ export function BibleReader() {
         </Card>
 
         {/* Bible Text Display */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">
+        <Card className="gap-4">
+          <CardHeader className="px-4 pt-4">
+            <CardTitle className="text-lg sm:text-xl">
               {selectedBook} {currentChapter}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 pb-4 [&:last-child]:pb-4">
             {isLoading ? (
               <div className="space-y-4">
                 {Array.from({ length: 12 }).map((_, i) => (
@@ -242,16 +250,22 @@ export function BibleReader() {
             ) : error ? (
               <p className="text-amber-600 py-4">{error}</p>
             ) : verses.length > 0 ? (
-              <div className="space-y-4">
+              <motion.div
+                key={`${selectedBook}-${currentChapter}`}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+                className="space-y-4"
+              >
                 {verses.map((verse, idx) => (
-                  <p key={`${verse.number}-${idx}`} className="text-gray-800 leading-relaxed">
-                    <sup className="text-gray-500 font-semibold align-super text-sm mr-1">
+                  <p key={`${verse.number}-${idx}`} className="text-gray-800 leading-relaxed text-sm sm:text-base">
+                    <sup className="text-gray-500 font-semibold align-super text-xs sm:text-sm mr-1">
                       {verse.number}
                     </sup>
                     {verse.text}
                   </p>
                 ))}
-              </div>
+              </motion.div>
             ) : (
               <p className="text-gray-500 py-4">No verses to display.</p>
             )}
