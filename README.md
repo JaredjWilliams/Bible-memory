@@ -21,7 +21,11 @@ docker-compose up -d
 
 ### 2. Environment
 
-Set `ESV_API_KEY` in your system environment variables (Windows: System Properties → Environment Variables) for ESV verse lookup. **Restart Cursor/your terminal** after adding it so the new variable is picked up.
+The backend requires `ESV_API_KEY` for Bible text lookup. Set it in your environment (or in `.env` in the backend directory):
+
+- **Obtain a key**: https://api.esv.org/account/create-application/
+- **Backend**: Set `ESV_API_KEY` in the backend environment (system env vars or `.env`). **Restart Cursor/your terminal** after adding it so the new variable is picked up.
+- See `.env.example` for a template.
 
 ### 3. Backend
 
@@ -64,6 +68,11 @@ Access the full site at `http://localhost:8080`.
 
 - Health: `GET /actuator/health`
 - All other endpoints under `/api/*` (see plan for details)
+- `/api/passages` and all `/api/**` routes require JWT authentication (login required).
+
+## ESV API Notes
+
+- **Rate limits**: The ESV API has usage limits for non-commercial use. Consider adding backend caching (e.g. up to 500 verses) in the future to reduce API calls.
 
 ## License
 

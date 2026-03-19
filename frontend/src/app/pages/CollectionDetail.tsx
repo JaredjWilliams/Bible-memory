@@ -74,7 +74,12 @@ export function CollectionDetail() {
         toast.error('Verse not found. Check the reference and try again.');
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to fetch verse from ESV');
+      const msg = e instanceof Error ? e.message : '';
+      const userMsg =
+        msg?.toLowerCase().includes('api key') || msg?.toLowerCase().includes('not configured')
+          ? 'Bible text unavailable. Please contact the administrator.'
+          : msg || 'Failed to fetch verse from ESV';
+      toast.error(userMsg);
     } finally {
       setIsLoadingESV(false);
     }

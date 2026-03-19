@@ -67,7 +67,12 @@ export function BibleReader() {
       })
       .catch((e) => {
         setPassageText(null);
-        setError(e instanceof Error ? e.message : 'ESV API not configured');
+        const msg = e instanceof Error ? e.message : '';
+        setError(
+          msg?.toLowerCase().includes('api key') || msg?.toLowerCase().includes('not configured')
+            ? 'Bible text unavailable. Please contact the administrator.'
+            : msg || 'Failed to load passage.'
+        );
       })
       .finally(() => setIsLoading(false));
   }, [selectedBook, currentChapter]);
