@@ -1,5 +1,6 @@
 package org.biblememory.service;
 
+import org.biblememory.exception.DuplicateVerseException;
 import org.biblememory.model.Collection;
 import org.biblememory.model.Verse;
 import org.biblememory.repository.VerseProgressRepository;
@@ -43,13 +44,17 @@ public class VerseService {
         if (collection == null) {
             return null;
         }
+        String ref = reference != null ? reference.trim() : "";
+        if (verseRepository.existsByCollectionIdAndReference(collectionId, ref)) {
+            throw new DuplicateVerseException("This verse is already in the collection");
+        }
         int maxOrder = verseRepository.findByCollectionIdOrderByOrderIndexAsc(collectionId).stream()
                 .mapToInt(Verse::getOrderIndex)
                 .max()
                 .orElse(-1);
         Verse verse = new Verse();
         verse.setCollection(collection);
-        verse.setReference(reference);
+        verse.setReference(ref);
         verse.setText(text);
         verse.setOrderIndex(maxOrder + 1);
         verse.setSource(source);

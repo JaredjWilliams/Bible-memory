@@ -1,10 +1,13 @@
 package org.biblememory.controller;
 
 import jakarta.validation.Valid;
+import org.biblememory.controller.dto.BulkAddVersesRequest;
+import org.biblememory.controller.dto.BulkAddVersesResponse;
 import org.biblememory.controller.dto.CreateVerseRequest;
 import org.biblememory.controller.dto.UpdateVerseRequest;
 import org.biblememory.controller.dto.VerseDto;
 import org.biblememory.model.Verse;
+import org.biblememory.service.BulkVerseService;
 import org.biblememory.service.VerseService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,9 +20,11 @@ import java.util.List;
 public class VerseController {
 
     private final VerseService verseService;
+    private final BulkVerseService bulkVerseService;
 
-    public VerseController(VerseService verseService) {
+    public VerseController(VerseService verseService, BulkVerseService bulkVerseService) {
         this.verseService = verseService;
+        this.bulkVerseService = bulkVerseService;
     }
 
     @GetMapping
@@ -32,6 +37,21 @@ public class VerseController {
                 .map(this::toDto)
                 .toList();
         return ResponseEntity.ok(dtos);
+    }
+
+    @PostMapping("/bulk")
+    public ResponseEntity<?> bulkCreate(@Valid @RequestBody BulkAddVersesRequest request) {
+        Long userId = ControllerUtils.currentUserId();
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        var result = bulkVerseService.bulkAdd(request.collectionId(), userId, request.range().trim());
+        if (result.error() != null) {
+            return ResponseEntity.badRequest()
+                    .body(new org.biblememory.model.ApiError("BULK_ADD_ERROR", result.error()));
+        }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new BulkAddVersesResponse(result.added(), result.skipped()));
     }
 
     @PostMapping

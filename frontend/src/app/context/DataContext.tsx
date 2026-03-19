@@ -36,6 +36,7 @@ interface DataContextType {
   deleteCollection: (collectionId: string) => Promise<void>;
   getVersesByCollection: (collectionId: string) => Verse[];
   addVerse: (collectionId: string, reference: string, text: string, source?: string) => Promise<void>;
+  addBulkVerses: (collectionId: string, range: string) => Promise<{ added: number; skipped: number }>;
   deleteVerse: (verseId: string) => Promise<void>;
   recordPractice: (verseId: string, success: boolean) => Promise<void>;
   getDueVerses: (collectionId: string) => number;
@@ -281,6 +282,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setVerses((prev) => [...prev, newVerse]);
   };
 
+  const addBulkVerses = async (collectionId: string, range: string) => {
+    if (!user) return { added: 0, skipped: 0 };
+    const res = await api.post<{ added: VerseDto[]; skipped: number }>('/api/verses/bulk', {
+      collectionId: Number(collectionId),
+      range: range.trim(),
+    });
+    const newVerses = res.added.map((d) => toVerse(d, collectionId));
+    setVerses((prev) => [...prev, ...newVerses]);
+    return { added: res.added.length, skipped: res.skipped };
+  };
+
   const deleteVerse = async (verseId: string) => {
     if (!user) return;
     await api.delete(`/api/verses/${verseId}`);
@@ -314,6 +326,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         deleteCollection,
         getVersesByCollection,
         addVerse,
+        addBulkVerses,
         deleteVerse,
         recordPractice,
         getDueVerses,
