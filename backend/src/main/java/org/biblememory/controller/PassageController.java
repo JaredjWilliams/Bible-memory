@@ -19,12 +19,14 @@ public class PassageController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getPassage(@RequestParam String q) {
+    public ResponseEntity<?> getPassage(
+            @RequestParam String q,
+            @RequestParam(required = false, defaultValue = "false") boolean reader) {
         if (q == null || q.isBlank()) {
             return ResponseEntity.badRequest()
                     .body(new org.biblememory.model.ApiError("VALIDATION_ERROR", "Query parameter 'q' is required"));
         }
-        EsvResult result = esvService.fetchPassage(q);
+        EsvResult result = esvService.fetchPassage(q, reader);
         if (!result.success()) {
             return ResponseEntity.badRequest()
                     .body(new org.biblememory.model.ApiError("ESV_ERROR", result.error()));

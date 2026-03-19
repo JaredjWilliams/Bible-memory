@@ -23,6 +23,10 @@ public class EsvPassageService {
     }
 
     public EsvResult fetchPassage(String query) {
+        return fetchPassage(query, false);
+    }
+
+    public EsvResult fetchPassage(String query, boolean readerMode) {
         if (apiKey == null || apiKey.isBlank()) {
             return EsvResult.error("ESV API key not configured");
         }
@@ -31,8 +35,8 @@ public class EsvPassageService {
         }
         String encoded = URLEncoder.encode(query.trim(), StandardCharsets.UTF_8);
         String url = ESV_BASE + "?q=" + encoded
-                + "&include-passage-references=false"
-                + "&include-verse-numbers=false"
+                + "&include-passage-references=" + readerMode
+                + "&include-verse-numbers=" + readerMode
                 + "&include-footnotes=false"
                 + "&include-footnote-body=false"
                 + "&include-headings=false"
@@ -52,7 +56,7 @@ public class EsvPassageService {
                 String raw = passages != null && passages.length > 0
                         ? String.join("\n", passages).trim()
                         : "";
-                String text = sanitizePassageText(raw);
+                String text = sanitizePassageText(raw, readerMode);
                 return EsvResult.success(text, query);
             }
             return EsvResult.error("Failed to fetch passage");
@@ -62,9 +66,9 @@ public class EsvPassageService {
     }
 
     /**
-     * Sanitize ESV passage text: remove verse numbers, footnotes, headings, and extra formatting.
+     * Sanitize ESV passage text: remove verse numbers (unless reader mode), footnotes, headings, and extra formatting.
      */
-    private String sanitizePassageText(String text) {
+    private String sanitizePassageText(String text, boolean readerMode) {
         if (text == null || text.isBlank()) return "";
         // Remove "Footnotes" section and everything after it
         int footnotesIdx = text.toLowerCase().indexOf("footnotes");
@@ -73,8 +77,10 @@ public class EsvPassageService {
         }
         // Remove footnote references like (1), (2) in the text
         text = text.replaceAll("\\(\\d+\\)", "");
-        // Remove verse numbers in brackets like [16], [35]
-        text = text.replaceAll("\\s*\\[\\d+\\]\\s*", " ");
+        // Remove verse numbers in brackets like [16], [35] (skip in reader mode to keep verse markers)
+        if (!readerMode) {
+            text = text.replaceAll("\\s*\\[\\d+\\]\\s*", " ");
+        }
         // Remove trailing (ESV) copyright
         text = text.replaceAll("\\s*\\(ESV\\)\\s*$", "");
         // Remove section headings like "For God So Loved the World| " at start (phrase ending with |)
