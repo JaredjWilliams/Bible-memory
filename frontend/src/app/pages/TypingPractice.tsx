@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { useData, Verse } from '../context/DataContext';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
@@ -25,6 +25,8 @@ function quotesMatch(a: string, b: string): boolean {
 
 export function TypingPractice() {
   const { collectionId } = useParams<{ collectionId: string }>();
+  const [searchParams] = useSearchParams();
+  const verseIdParam = searchParams.get('verseId');
   const navigate = useNavigate();
   const { collections, getVersesByCollection, recordPractice, getDueVerses } = useData();
 
@@ -49,10 +51,19 @@ export function TypingPractice() {
       const collectionVerses = getVersesByCollection(collectionId);
       setVerses(collectionVerses);
       if (collectionVerses.length > 0) {
-        setSelectedRange({ start: 0, end: collectionVerses.length - 1 });
+        if (verseIdParam) {
+          const idx = collectionVerses.findIndex((v) => v.id === verseIdParam);
+          if (idx >= 0) {
+            setSelectedRange({ start: idx, end: idx });
+          } else {
+            setSelectedRange({ start: 0, end: collectionVerses.length - 1 });
+          }
+        } else {
+          setSelectedRange({ start: 0, end: collectionVerses.length - 1 });
+        }
       }
     }
-  }, [collectionId, getVersesByCollection]);
+  }, [collectionId, verseIdParam, getVersesByCollection]);
 
   useEffect(() => {
     resetPractice();

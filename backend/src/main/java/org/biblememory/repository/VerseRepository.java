@@ -10,4 +10,6 @@ public interface VerseRepository extends JpaRepository<Verse, Long> {
     List<Verse> findByCollectionIdOrderByOrderIndexAsc(Long collectionId);
 
     boolean existsByIdAndCollection_Profile_UserId(Long id, Long userId);
+
+    boolean existsByCollectionIdAndReference(Long collectionId, String reference);
 }

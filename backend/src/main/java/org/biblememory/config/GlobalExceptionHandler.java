@@ -1,5 +1,6 @@
 package org.biblememory.config;
 
+import org.biblememory.exception.DuplicateVerseException;
 import org.biblememory.model.ApiError;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,11 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(DuplicateVerseException.class)
+    public ResponseEntity<ApiError> handleDuplicateVerse(DuplicateVerseException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError("DUPLICATE_VERSE", ex.getMessage()));
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex) {
