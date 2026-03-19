@@ -1,59 +1,33 @@
-# Frontend
+# Bible Memory Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.22.
+React (Vite + TypeScript) frontend for the Bible Memory app. Uses Radix UI components, Tailwind CSS, and React Router.
 
-## Development server
+## Prerequisites
 
-To start a local development server, run:
+- Node.js 18+ and npm
+- Backend running at `http://localhost:8080` (for API calls)
 
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Development
 
 ```bash
-ng generate component component-name
+npm install
+npm run dev
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+The dev server runs at `http://localhost:5173` and proxies `/api` and `/actuator` to the backend.
+
+## Production Build
 
 ```bash
-ng generate --help
+npm run build
 ```
 
-## Building
+Output goes to `backend/src/main/resources/static/`. Run the Spring Boot backend to serve the built app.
 
-To build the project run:
+## Environment
 
-```bash
-ng build
-```
+- `VITE_API_BASE` – Override API base URL (default: empty, uses proxy in dev)
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## Design
 
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Original Figma design: https://www.figma.com/design/MTkK9rfBRIpJXJXmvBBtNW/Bible-Memory-UI-Design
