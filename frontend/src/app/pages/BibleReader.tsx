@@ -1,11 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { api } from '../../lib/api';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-// Mock Bible books
+// Parse ESV text format: "[1] In the beginning... [2] The earth..."
+// Also handles "1 In the beginning" (verse number without brackets) and raw text
+const parseVerses = (text: string): { number: number; text: string }[] => {
+  if (!text?.trim()) return [];
+
+  // Format 1: [1] [2] [3] - brackets with verse numbers
+  const bracketMatches = text.matchAll(/(\[\d+\])\s*([^[]*?)(?=\[\d+\]|$)/gs);
+  const bracketVerses: { number: number; text: string }[] = [];
+  for (const m of bracketMatches) {
+    const numMatch = m[1].match(/\[(\d+)\]/);
+    const num = numMatch ? parseInt(numMatch[1], 10) : bracketVerses.length + 1;
+    const verseText = (m[2] ?? '').trim();
+    if (verseText) bracketVerses.push({ number: num, text: verseText });
+  }
+  if (bracketVerses.length > 0) return bracketVerses;
+
+  // Format 2: Split on [\d+] pattern (alternate)
+  const segments = text.split(/(\[\d+\]\s*)/);
+  const altVerses: { number: number; text: string }[] = [];
+  for (let i = 1; i < segments.length; i += 2) {
+    const numMatch = segments[i].match(/\[(\d+)\]/);
+    const num = numMatch ? parseInt(numMatch[1], 10) : altVerses.length + 1;
+    const verseText = (segments[i + 1] ?? '').trim();
+    if (verseText) altVerses.push({ number: num, text: verseText });
+  }
+  if (altVerses.length > 0) return altVerses;
+
+  // Format 3: Single block - treat entire text as one verse
+  return [{ number: 1, text: text.trim() }];
+};
+
+// Bible books
 const BOOKS = [
   'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
   'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel',
@@ -13,7 +45,7 @@ const BOOKS = [
   'Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians',
 ];
 
-// Mock chapters per book (simplified)
+// Chapters per book (simplified)
 const CHAPTERS_PER_BOOK: Record<string, number> = {
   'Genesis': 50, 'Exodus': 40, 'Leviticus': 27, 'Numbers': 36, 'Deuteronomy': 34,
   'Joshua': 24, 'Judges': 21, 'Ruth': 4, '1 Samuel': 31, '2 Samuel': 24,
@@ -21,39 +53,39 @@ const CHAPTERS_PER_BOOK: Record<string, number> = {
   'Romans': 16, '1 Corinthians': 16, '2 Corinthians': 13, 'Galatians': 6, 'Ephesians': 6,
 };
 
-// Generate mock verses for a chapter
-const generateMockVerses = (book: string, chapter: number, verseCount: number) => {
-  const verses = [];
-  const loremTexts = [
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-    'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-    'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.',
-    'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum.',
-    'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia.',
-    'Nisi ut aliquip ex ea commodo consequat.',
-    'Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet.',
-    'Consectetur adipisci velit, sed quia non numquam eius modi tempora.',
-    'Incidunt ut labore et dolore magnam aliquam quaerat voluptatem.',
-    'Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis.',
-  ];
-
-  for (let i = 1; i <= verseCount; i++) {
-    verses.push({
-      number: i,
-      text: loremTexts[i % loremTexts.length],
-    });
-  }
-
-  return verses;
-};
-
 export function BibleReader() {
   const [selectedBook, setSelectedBook] = useState('Genesis');
   const [currentChapter, setCurrentChapter] = useState(1);
   const [showNavigation, setShowNavigation] = useState(true);
-  
+  const [passageText, setPassageText] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const maxChapter = CHAPTERS_PER_BOOK[selectedBook] || 50;
-  const verses = generateMockVerses(selectedBook, currentChapter, 25);
+  const verses = passageText ? parseVerses(passageText) : [];
+
+  useEffect(() => {
+    const query = `${selectedBook} ${currentChapter}`;
+    setIsLoading(true);
+    setError(null);
+    api
+      .get<{ text: string; reference: string }>(
+        `/api/passages?q=${encodeURIComponent(query)}&reader=true`
+      )
+      .then((res) => {
+        if (res?.text?.trim()) {
+          setPassageText(res.text);
+        } else {
+          setPassageText(null);
+          setError('Passage not found');
+        }
+      })
+      .catch((e) => {
+        setPassageText(null);
+        setError(e instanceof Error ? e.message : 'ESV API not configured');
+      })
+      .finally(() => setIsLoading(false));
+  }, [selectedBook, currentChapter]);
 
   const handlePreviousChapter = () => {
     if (currentChapter > 1) {
@@ -205,18 +237,34 @@ export function BibleReader() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {verses.map(verse => (
-                <div key={verse.number} className="flex gap-3">
-                  <span className="text-sm font-semibold text-gray-500 mt-1 flex-shrink-0">
-                    {verse.number}
-                  </span>
-                  <p className="text-gray-800 leading-relaxed">
+            {isLoading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div key={i} className="flex gap-3 animate-pulse">
+                    <span className="w-6 h-4 bg-gray-200 rounded flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-full" />
+                      <div className="h-4 bg-gray-200 rounded w-3/4" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : error ? (
+              <p className="text-amber-600 py-4">{error}</p>
+            ) : verses.length > 0 ? (
+              <div className="space-y-4">
+                {verses.map((verse, idx) => (
+                  <p key={`${verse.number}-${idx}`} className="text-gray-800 leading-relaxed">
+                    <sup className="text-gray-500 font-semibold align-super text-sm mr-1">
+                      {verse.number}
+                    </sup>
                     {verse.text}
                   </p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 py-4">No verses to display.</p>
+            )}
           </CardContent>
         </Card>
 
