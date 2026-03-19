@@ -38,10 +38,10 @@ export function CollectionDetail() {
 
   if (!collectionId || !collection) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 text-sm sm:text-base">
         <Card>
           <CardContent className="py-8 text-center">
-            <p className="text-gray-600 mb-4">Collection not found</p>
+            <p className="text-gray-600 mb-4 text-sm sm:text-base">Collection not found</p>
             <Button onClick={() => navigate('/collections')}>Back to Collections</Button>
           </CardContent>
         </Card>
@@ -127,30 +127,35 @@ export function CollectionDetail() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto space-y-4">
-        {/* Header: mobile = back+typing row, title below; desktop = back+title | typing */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-1 sm:items-center sm:gap-4">
-            <div className="flex justify-between items-center sm:contents">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/collections')}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
+    <div className="container mx-auto px-4 py-8 text-sm sm:text-base">
+      <div className="max-w-4xl mx-auto space-y-2">
+        {/* Header: mobile = back row, then title+play row (play right); desktop = back | title left, play right */}
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/collections')} className="order-1 sm:order-1 self-start">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <div className="flex items-center justify-between w-full gap-4 order-2 sm:order-2">
+              <h1 className="text-lg sm:text-xl font-bold">{collection.name}</h1>
               {verses.length > 0 && (
-                <Button size="icon" className="sm:ml-auto" onClick={() => navigate(`/collections/${collectionId}/practice`)} title="Typing">
+                <Button size="icon" className="sm:hidden shrink-0" onClick={() => navigate(`/collections/${collectionId}/practice`)} title="Typing">
                   <Play className="h-4 w-4" />
                 </Button>
               )}
             </div>
-            <h1 className="text-3xl font-bold">{collection.name}</h1>
           </div>
+          {verses.length > 0 && (
+            <Button size="icon" className="hidden sm:flex shrink-0" onClick={() => navigate(`/collections/${collectionId}/practice`)} title="Typing">
+              <Play className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         {/* Add Verses */}
         <Card>
           <CardHeader>
-            <CardTitle>Add Verses</CardTitle>
+            <CardTitle className="text-base">Add Verses</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs value={activeAddTab} onValueChange={setActiveAddTab}>
@@ -288,11 +293,11 @@ export function CollectionDetail() {
         {/* Verse List */}
         <Card>
           <CardHeader>
-            <CardTitle>Verses ({verses.length})</CardTitle>
+            <CardTitle className="text-base">Verses ({verses.length})</CardTitle>
           </CardHeader>
           <CardContent>
             {verses.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 text-sm sm:text-base">
                 No verses yet. Add some to get started!
               </div>
             ) : (
@@ -308,7 +313,7 @@ export function CollectionDetail() {
                         onClick={() => navigate(`/collections/${collectionId}/practice?verseId=${verse.id}`)}
                         className="text-left"
                       >
-                        <span className="font-semibold text-blue-600">{verse.reference}</span>
+                        <span className="text-sm sm:text-base font-semibold text-blue-600">{verse.reference}</span>
                       </button>
                       <div className="flex shrink-0 items-center gap-0">
                         <Button
@@ -336,7 +341,7 @@ export function CollectionDetail() {
                       onClick={() => navigate(`/collections/${collectionId}/practice?verseId=${verse.id}`)}
                       className="block w-full text-left"
                     >
-                      <p className="text-gray-700 break-words">{verse.text}</p>
+                      <p className="text-gray-800 leading-relaxed text-sm sm:text-base break-words">{verse.text}</p>
                     </button>
                   </div>
                 ))}
