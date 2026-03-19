@@ -1,2 +1,13 @@
 # MCP config with secrets - copy from .cursor/mcp.json.example and add your token
 .cursor/mcp.json
+
+# Environment and secrets
+.env
+
+# Build outputs
+backend/target/
+frontend/dist/
+frontend/.angular/
+
+# Dependencies
+frontend/node_modules/

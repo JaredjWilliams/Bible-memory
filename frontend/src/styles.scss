@@ -1,0 +1,37 @@
+/* Design system - mobile-first */
+:root {
+  --primary: #42585a;
+  --secondary: #cecbba;
+  --primary-text: #2c3e50;
+  --secondary-text: #5a6c7d;
+  --background: #f8f7f4;
+  --surface: #ffffff;
+  --error: #c0392b;
+  --success: #27ae60;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--primary-text);
+  background: var(--background);
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
