@@ -1,6 +1,6 @@
 # Bible Memory Website
 
-First iteration of a Bible memory web app with Angular 19 frontend and Spring Boot backend. Features user authentication, profiles, verse collections, typing practice with green/red feedback, and spaced repetition.
+First iteration of a Bible memory web app with React (Vite) frontend and Spring Boot backend. Features user authentication, profiles, verse collections, typing practice with green/red feedback, and spaced repetition.
 
 ## Prerequisites
 
@@ -37,14 +37,14 @@ Backend runs at `http://localhost:8080`.
 ```bash
 cd frontend
 npm install
-ng serve
+npm run dev
 ```
 
-Frontend runs at `http://localhost:4200`. Open this URL in your browser.
+Frontend runs at `http://localhost:5173`. The Vite dev server proxies `/api` and `/actuator` to the backend at `http://localhost:8080`. **Start the backend first** so API calls work.
 
 ### 5. Production Build
 
-Build Angular and serve from Spring Boot:
+Build React and serve from Spring Boot:
 
 ```bash
 cd frontend
