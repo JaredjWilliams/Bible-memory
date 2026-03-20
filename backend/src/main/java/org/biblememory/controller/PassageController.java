@@ -2,6 +2,7 @@ package org.biblememory.controller;
 
 import org.biblememory.esv.EsvPassageService;
 import org.biblememory.esv.EsvPassageService.EsvResult;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,7 +32,9 @@ public class PassageController {
             return ResponseEntity.badRequest()
                     .body(new org.biblememory.model.ApiError("ESV_ERROR", result.error()));
         }
-        return ResponseEntity.ok(new PassageResponse(result.text(), result.reference()));
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(7, java.util.concurrent.TimeUnit.DAYS).cachePublic())
+                .body(new PassageResponse(result.text(), result.reference()));
     }
 
     public record PassageResponse(String text, String reference) {}

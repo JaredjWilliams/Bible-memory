@@ -1,6 +1,7 @@
 package org.biblememory.esv;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -22,10 +23,12 @@ public class EsvPassageService {
         this.apiKey = apiKey;
     }
 
+    @Cacheable(value = "passages", key = "#query.trim().toLowerCase() + '|false'", condition = "#result != null && #result.success()")
     public EsvResult fetchPassage(String query) {
         return fetchPassage(query, false);
     }
 
+    @Cacheable(value = "passages", key = "#query.trim().toLowerCase() + '|' + #readerMode", condition = "#result != null && #result.success()")
     public EsvResult fetchPassage(String query, boolean readerMode) {
         if (apiKey == null || apiKey.isBlank()) {
             return EsvResult.error("ESV API key not configured");
@@ -39,7 +42,7 @@ public class EsvPassageService {
                 + "&include-verse-numbers=" + readerMode
                 + "&include-footnotes=false"
                 + "&include-footnote-body=false"
-                + "&include-headings=false"
+                + "&include-headings=" + readerMode
                 + "&include-short-copyright=true";
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Token " + apiKey);
@@ -78,15 +81,18 @@ public class EsvPassageService {
         // Remove footnote references like (1), (2) in the text
         text = text.replaceAll("\\(\\d+\\)", "");
         // Remove verse numbers in brackets like [16], [35] (skip in reader mode to keep verse markers)
+        // Use [ \t] to preserve newlines (paragraph breaks)
         if (!readerMode) {
-            text = text.replaceAll("\\s*\\[\\d+\\]\\s*", " ");
+            text = text.replaceAll("[ \\t]*\\[\\d+\\][ \\t]*", " ");
         }
         // Remove trailing (ESV) copyright
         text = text.replaceAll("\\s*\\(ESV\\)\\s*$", "");
-        // Remove section headings like "For God So Loved the World| " at start (phrase ending with |)
-        text = text.replaceAll("^[^\\[\"]+\\|\\s*\"?", "");
-        // Collapse multiple spaces and trim
-        text = text.replaceAll("\\s+", " ").trim();
+        // Remove section headings (skip in reader mode to keep them embedded)
+        if (!readerMode) {
+            text = text.replaceAll("(?m)^[^\\[\"]+\\|\\s*\"?", "");
+        }
+        // Collapse multiple spaces/tabs but preserve newlines (paragraph breaks)
+        text = text.replaceAll("[ \\t]+", " ").trim();
         return text;
     }
 
