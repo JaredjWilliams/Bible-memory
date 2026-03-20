@@ -7,36 +7,42 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-// Parse ESV text format: "[1] In the beginning... [2] The earth..."
-// Also handles "1 In the beginning" (verse number without brackets) and raw text
-const parseVerses = (text: string): { number: number; text: string }[] => {
+/** Split passage text by paragraph breaks (\n\n). */
+function parseParagraphs(text: string): string[] {
   if (!text?.trim()) return [];
+  return text.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+}
 
-  // Format 1: [1] [2] [3] - brackets with verse numbers
-  const bracketMatches = text.matchAll(/(\[\d+\])\s*([^[]*?)(?=\[\d+\]|$)/gs);
-  const bracketVerses: { number: number; text: string }[] = [];
-  for (const m of bracketMatches) {
-    const numMatch = m[1].match(/\[(\d+)\]/);
-    const num = numMatch ? parseInt(numMatch[1], 10) : bracketVerses.length + 1;
-    const verseText = (m[2] ?? '').trim();
-    if (verseText) bracketVerses.push({ number: num, text: verseText });
-  }
-  if (bracketVerses.length > 0) return bracketVerses;
+/** ESV section headings: end with |, or short paragraph with no verse markers. */
+function isHeading(para: string): boolean {
+  const trimmed = para.trim();
+  // Format 1: ends with pipe (e.g. "Moses Flees to Midian| ")
+  if (/^[^\[\]]+\|\s*$/.test(trimmed)) return true;
+  // Format 2: no verse numbers [n], short text (likely standalone heading)
+  if (!/\[\d+\]/.test(trimmed) && trimmed.length < 80) return true;
+  return false;
+}
 
-  // Format 2: Split on [\d+] pattern (alternate)
-  const segments = text.split(/(\[\d+\]\s*)/);
-  const altVerses: { number: number; text: string }[] = [];
-  for (let i = 1; i < segments.length; i += 2) {
-    const numMatch = segments[i].match(/\[(\d+)\]/);
-    const num = numMatch ? parseInt(numMatch[1], 10) : altVerses.length + 1;
-    const verseText = (segments[i + 1] ?? '').trim();
-    if (verseText) altVerses.push({ number: num, text: verseText });
-  }
-  if (altVerses.length > 0) return altVerses;
+/** Remove trailing | from heading text for display. */
+function formatHeading(text: string): string {
+  return text.replace(/\|\s*$/, '').trim();
+}
 
-  // Format 3: Single block - treat entire text as one verse
-  return [{ number: 1, text: text.trim() }];
-};
+/** Render a paragraph with inline verse numbers ([1], [2], etc.) as superscripts. */
+function renderParagraphWithInlineVerses(paragraph: string): React.ReactNode {
+  const segments = paragraph.split(/(\[\d+\])\s*/);
+  return segments.map((seg, i) => {
+    const numMatch = seg.match(/\[(\d+)\]/);
+    if (numMatch) {
+      return (
+        <sup key={i} className="text-gray-500 font-semibold align-super text-[8px] sm:text-[9px] mr-0.5">
+          {numMatch[1]}
+        </sup>
+      );
+    }
+    return <span key={i}>{seg}</span>;
+  });
+}
 
 export function BibleReader() {
   const [selectedBook, setSelectedBook] = useState('Genesis');
@@ -47,7 +53,7 @@ export function BibleReader() {
   const [error, setError] = useState<string | null>(null);
 
   const maxChapter = CHAPTERS_PER_BOOK[selectedBook] || 50;
-  const verses = passageText ? parseVerses(passageText) : [];
+  const paragraphs = passageText ? parseParagraphs(passageText) : [];
 
   useEffect(() => {
     const query = `${selectedBook} ${currentChapter}`;
@@ -118,9 +124,9 @@ export function BibleReader() {
     <div className="container mx-auto px-4 pt-4 pb-8 sm:py-8 text-sm sm:text-base">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Navigation Controls */}
-        <Card className="gap-4">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pt-3 pb-2 pr-4">
-            <CardTitle className="text-base">Read Scripture</CardTitle>
+        <Card className="gap-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 py-2 px-4">
+            <CardTitle className="text-sm font-medium">Read Scripture</CardTitle>
             <Button
               variant="ghost"
               size="sm"
@@ -132,7 +138,7 @@ export function BibleReader() {
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
                 className="inline-flex"
               >
-                <ChevronDown className="h-5 w-5" />
+                <ChevronDown className="h-4 w-4" />
               </motion.span>
             </Button>
           </CardHeader>
@@ -145,15 +151,15 @@ export function BibleReader() {
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
                 style={{ overflow: 'hidden' }}
               >
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3 px-4 pb-4 pt-0">
                   {/* Book and Chapter Selectors */}
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="flex flex-row gap-3">
+                    <div className="flex-1 min-w-0">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
                         Book
                       </label>
                       <Select value={selectedBook} onValueChange={handleBookChange}>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-9">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -166,15 +172,15 @@ export function BibleReader() {
                       </Select>
                     </div>
                     
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
                         Chapter
                       </label>
                       <Select 
                         value={currentChapter.toString()} 
                         onValueChange={handleChapterChange}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-9">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -189,11 +195,11 @@ export function BibleReader() {
                   </div>
 
                   {/* Previous/Next Chapter Buttons */}
-                  <div className="flex flex-wrap justify-between items-center gap-2 pt-2 min-w-0">
+                  <div className="flex flex-wrap justify-between items-center gap-2 min-w-0">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="shrink-0"
+                      className="shrink-0 h-8"
                       onClick={handlePreviousChapter}
                       disabled={selectedBook === BOOKS[0] && currentChapter === 1}
                     >
@@ -202,14 +208,10 @@ export function BibleReader() {
                       <span className="sm:hidden">Prev</span>
                     </Button>
                     
-                    <div className="text-sm text-gray-600 shrink-0 text-center order-last sm:order-none w-full sm:w-auto">
-                      {selectedBook} {currentChapter}
-                    </div>
-                    
                     <Button
                       variant="outline"
                       size="sm"
-                      className="shrink-0"
+                      className="shrink-0 h-8"
                       onClick={handleNextChapter}
                       disabled={
                         selectedBook === BOOKS[BOOKS.length - 1] && 
@@ -229,12 +231,7 @@ export function BibleReader() {
 
         {/* Bible Text Display */}
         <Card className="gap-4">
-          <CardHeader className="px-4 pt-4">
-            <CardTitle className="text-lg sm:text-xl">
-              {selectedBook} {currentChapter}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4 [&:last-child]:pb-4">
+          <CardContent className="px-4 pt-4 pb-4 [&:last-child]:pb-4">
             {isLoading ? (
               <div className="space-y-4">
                 {Array.from({ length: 12 }).map((_, i) => (
@@ -249,7 +246,7 @@ export function BibleReader() {
               </div>
             ) : error ? (
               <p className="text-amber-600 py-4">{error}</p>
-            ) : verses.length > 0 ? (
+            ) : paragraphs.length > 0 ? (
               <motion.div
                 key={`${selectedBook}-${currentChapter}`}
                 initial={{ opacity: 0, y: 8 }}
@@ -257,14 +254,21 @@ export function BibleReader() {
                 transition={{ duration: 0.3, ease: 'easeOut' }}
                 className="space-y-4"
               >
-                {verses.map((verse, idx) => (
-                  <p key={`${verse.number}-${idx}`} className="text-gray-800 leading-relaxed text-sm sm:text-base">
-                    <sup className="text-gray-500 font-semibold align-super text-xs sm:text-sm mr-1">
-                      {verse.number}
-                    </sup>
-                    {verse.text}
-                  </p>
-                ))}
+                {paragraphs.map((para, idx) => {
+                  if (isHeading(para)) {
+                    const headingText = formatHeading(para);
+                    return headingText ? (
+                      <p key={idx} className="text-center font-extrabold text-gray-700 text-sm sm:text-base mt-4 mb-2 first:mt-0">
+                        {headingText}
+                      </p>
+                    ) : null;
+                  }
+                  return (
+                    <p key={idx} className="text-gray-800 leading-relaxed text-sm sm:text-base">
+                      {renderParagraphWithInlineVerses(para)}
+                    </p>
+                  );
+                })}
               </motion.div>
             ) : (
               <p className="text-gray-500 py-4">No verses to display.</p>

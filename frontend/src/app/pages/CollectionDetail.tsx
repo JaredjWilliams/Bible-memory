@@ -341,7 +341,17 @@ export function CollectionDetail() {
                       onClick={() => navigate(`/collections/${collectionId}/practice?verseId=${verse.id}`)}
                       className="block w-full text-left"
                     >
-                      <p className="text-gray-800 leading-relaxed text-sm sm:text-base break-words">{verse.text}</p>
+                      <div className="space-y-2">
+                        {verse.text
+                          .split(/\n\n+/)
+                          .map((para) => para.trim())
+                          .filter(Boolean)
+                          .map((para, i) => (
+                            <p key={i} className="text-gray-800 leading-relaxed text-sm sm:text-base break-words">
+                              {para}
+                            </p>
+                          ))}
+                      </div>
                     </button>
                   </div>
                 ))}
