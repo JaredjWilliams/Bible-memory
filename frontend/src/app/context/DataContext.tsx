@@ -25,6 +25,14 @@ export interface Verse {
   reviewCount: number;
 }
 
+export interface Note {
+  id: string;
+  verseId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface DataContextType {
   profiles: Profile[];
   currentProfile: Profile | null;
@@ -40,6 +48,10 @@ interface DataContextType {
   deleteVerse: (verseId: string) => Promise<void>;
   recordPractice: (verseId: string, success: boolean, incrementInterval?: boolean) => Promise<void>;
   getDueVerses: (collectionId: string) => number;
+  getNotes: (verseId: string) => Promise<Note[]>;
+  createNote: (verseId: string, content: string) => Promise<Note>;
+  updateNote: (noteId: string, content: string) => Promise<Note>;
+  deleteNote: (noteId: string) => Promise<void>;
   isLoading: boolean;
   refreshData: () => Promise<void>;
 }
@@ -74,6 +86,14 @@ interface DueVerseDto {
   orderIndex: number;
   source: string | null;
   createdAt: string;
+}
+
+interface NoteDto {
+  id: number;
+  verseId: number;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -320,6 +340,55 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return dueVerses.filter((v) => String(v.collectionId) === collectionId).length;
   };
 
+  const getNotes = async (verseId: string): Promise<Note[]> => {
+    if (!user) return [];
+    const verseIdNum = parseInt(verseId, 10);
+    if (Number.isNaN(verseIdNum)) return [];
+    const dtos = await api.get<NoteDto[]>(`/api/notes?verseId=${verseIdNum}`);
+    return dtos.map((d) => ({
+      id: String(d.id),
+      verseId: String(d.verseId),
+      content: d.content,
+      createdAt: d.createdAt,
+      updatedAt: d.updatedAt,
+    }));
+  };
+
+  const createNote = async (verseId: string, content: string): Promise<Note> => {
+    if (!user) throw new Error('Not authenticated');
+    const verseIdNum = parseInt(verseId, 10);
+    if (Number.isNaN(verseIdNum)) throw new Error('Invalid verse ID');
+    const dto = await api.post<NoteDto>('/api/notes', { verseId: verseIdNum, content });
+    return {
+      id: String(dto.id),
+      verseId: String(dto.verseId),
+      content: dto.content,
+      createdAt: dto.createdAt,
+      updatedAt: dto.updatedAt,
+    };
+  };
+
+  const updateNote = async (noteId: string, content: string): Promise<Note> => {
+    if (!user) throw new Error('Not authenticated');
+    const noteIdNum = parseInt(noteId, 10);
+    if (Number.isNaN(noteIdNum)) throw new Error('Invalid note ID');
+    const dto = await api.put<NoteDto>(`/api/notes/${noteIdNum}`, { content });
+    return {
+      id: String(dto.id),
+      verseId: String(dto.verseId),
+      content: dto.content,
+      createdAt: dto.createdAt,
+      updatedAt: dto.updatedAt,
+    };
+  };
+
+  const deleteNote = async (noteId: string): Promise<void> => {
+    if (!user) return;
+    const noteIdNum = parseInt(noteId, 10);
+    if (Number.isNaN(noteIdNum)) return;
+    await api.delete(`/api/notes/${noteIdNum}`);
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -337,6 +406,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         deleteVerse,
         recordPractice,
         getDueVerses,
+        getNotes,
+        createNote,
+        updateNote,
+        deleteNote,
         isLoading,
         refreshData,
       }}
