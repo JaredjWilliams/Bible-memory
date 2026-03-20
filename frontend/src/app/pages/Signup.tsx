@@ -53,8 +53,8 @@ export function Signup() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-16">
-      <div className="max-w-md mx-auto">
+    <div className="container mx-auto px-4 flex-1 flex items-center justify-center pt-4 pb-8 sm:py-8">
+      <div className="max-w-md w-full">
         <Card>
           <CardHeader>
             <CardTitle>Sign Up</CardTitle>

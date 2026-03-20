@@ -7,6 +7,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { cn } from '../components/ui/utils';
 import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { motion } from 'motion/react';
 
 type PracticeMode = 'full' | 'alternating' | 'blank';
 
@@ -63,7 +64,7 @@ export function TypingPractice() {
 
   if (!collectionId || !collection) {
     return (
-      <div className="container mx-auto px-4 py-8 text-sm sm:text-base">
+      <div className="container mx-auto px-4 pt-4 pb-8 sm:py-8 text-sm sm:text-base">
         <div className="max-w-4xl mx-auto">
           <Card>
             <CardContent className="py-8 text-center">
@@ -78,7 +79,7 @@ export function TypingPractice() {
 
   if (verses.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8 text-sm sm:text-base">
+      <div className="container mx-auto px-4 pt-4 pb-8 sm:py-8 text-sm sm:text-base">
         <div className="max-w-4xl mx-auto">
           <Button variant="ghost" size="sm" onClick={() => navigate(`/collections/${collectionId}`)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -115,28 +116,35 @@ export function TypingPractice() {
       setTypedText(newText);
     }
 
-    const isCompleteMatch = newText.length === targetText.length &&
-      [...newText].every((c, i) => quotesMatch(c, targetText[i]));
-    if (isCompleteMatch) {
-      const endTime = Date.now();
-      const elapsedSeconds = startTime ? (endTime - startTime) / 1000 : 0;
-      const wordCount = targetText.split(' ').length;
-      const success = elapsedSeconds < wordCount * 5;
+    if (newText.length !== targetText.length) return;
 
-      recordPractice(currentVerse.id, success).catch(() => {
-        toast.error('Failed to save practice result');
-      });
+    const correctCount = [...newText].filter((c, i) => quotesMatch(c, targetText[i])).length;
+    const correctPercent = (correctCount / targetText.length) * 100;
 
-      setTimeout(() => {
-        if (currentVerseIndex < practiceVerses.length - 1) {
-          setCurrentVerseIndex(currentVerseIndex + 1);
-          setTypedText('');
-          setStartTime(null);
-        } else {
-          setIsComplete(true);
-        }
-      }, 500);
+    if (correctPercent < 90) {
+      toast.error('You did not meet the 90% mark. Please retry this verse.');
+      setTypedText('');
+      return;
     }
+
+    const endTime = Date.now();
+    const elapsedSeconds = startTime ? (endTime - startTime) / 1000 : 0;
+    const wordCount = targetText.split(' ').length;
+    const success = elapsedSeconds < wordCount * 5;
+
+    recordPractice(currentVerse.id, success).catch(() => {
+      toast.error('Failed to save practice result');
+    });
+
+    setTimeout(() => {
+      if (currentVerseIndex < practiceVerses.length - 1) {
+        setCurrentVerseIndex(currentVerseIndex + 1);
+        setTypedText('');
+        setStartTime(null);
+      } else {
+        setIsComplete(true);
+      }
+    }, 500);
   };
 
   // Build word boundaries for visibility logic
@@ -214,7 +222,7 @@ export function TypingPractice() {
 
   if (isComplete) {
     return (
-      <div className="container mx-auto px-4 py-8 text-sm sm:text-base">
+      <div className="container mx-auto px-4 pt-4 pb-8 sm:py-8 text-sm sm:text-base">
         <div className="max-w-4xl mx-auto space-y-6">
           <Button variant="ghost" size="sm" onClick={() => navigate(`/collections/${collectionId}`)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -243,7 +251,7 @@ export function TypingPractice() {
 
   return (
     <div className="container mx-auto px-4 pt-4 pb-6 sm:pt-6 sm:pb-8 text-sm sm:text-base">
-      <div className="max-w-4xl mx-auto space-y-4">
+      <div className="max-w-4xl mx-auto flex flex-col gap-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={() => navigate(`/collections/${collectionId}`)}>
@@ -314,30 +322,8 @@ export function TypingPractice() {
           </div>
         </div>
 
-        {/* Practice Mode Toggle */}
-        <Card>
-          <CardContent className="flex items-center justify-center py-3 !pb-3">
-            <ToggleGroup
-              type="single"
-              value={practiceMode}
-              onValueChange={(value) => value && setPracticeMode(value as PracticeMode)}
-              className="w-full max-w-full"
-            >
-                <ToggleGroupItem value="full" className="flex-1 justify-center text-xs">
-                  Full
-                </ToggleGroupItem>
-                <ToggleGroupItem value="alternating" className="flex-1 justify-center text-xs">
-                  Alternating
-                </ToggleGroupItem>
-                <ToggleGroupItem value="blank" className="flex-1 justify-center text-xs">
-                  Blank
-                </ToggleGroupItem>
-              </ToggleGroup>
-          </CardContent>
-        </Card>
-
-        {/* Typing Area - Single inline display, no separate field */}
-        <Card className="relative">
+        {/* Typing Area - order-1 mobile (first), order-2 desktop (below toggle) */}
+        <Card className="relative order-1 md:order-2">
           <div
             className={cn(
               'sm:hidden absolute top-4 right-6 text-xs font-medium z-10',
@@ -374,7 +360,13 @@ export function TypingPractice() {
                 value={typedText}
                 onChange={handleInputChange}
                 onKeyDown={(e) => {
-                  if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+                  if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Backspace'].includes(e.key)) {
+                    e.preventDefault();
+                    return;
+                  }
+                  // When next character is a space, only allow space key
+                  const nextChar = targetText[typedText.length];
+                  if (nextChar === ' ' && e.key !== ' ') {
                     e.preventDefault();
                   }
                 }}
@@ -386,6 +378,37 @@ export function TypingPractice() {
 
             <div className="text-xs sm:text-sm text-gray-500 text-center">
               Click above and type the verse. Green = correct, red = mistake.
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Practice Mode Toggle - order-2 mobile (below input), order-1 desktop (above input) */}
+        <Card className="order-2 md:order-1">
+          <CardContent className="flex items-center justify-center py-3 !pb-3">
+            <div className="relative w-full max-w-full rounded-md border border-input bg-transparent p-0.5">
+              <motion.div
+                className="absolute top-0.5 bottom-0.5 w-[calc(33.333%-2px)] rounded-md bg-accent z-0"
+                animate={{
+                  left: practiceMode === 'full' ? '2px' : practiceMode === 'alternating' ? 'calc(33.333% + 1px)' : 'calc(66.666% + 1px)',
+                }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              />
+              <ToggleGroup
+                type="single"
+                value={practiceMode}
+                onValueChange={(value) => value && setPracticeMode(value as PracticeMode)}
+                className="relative z-10 w-full border-0 bg-transparent shadow-none p-0"
+              >
+                <ToggleGroupItem value="full" className="flex-1 justify-center text-xs border-0 bg-transparent data-[state=on]:bg-transparent data-[state=on]:text-accent-foreground">
+                  Full
+                </ToggleGroupItem>
+                <ToggleGroupItem value="alternating" className="flex-1 justify-center text-xs border-0 bg-transparent data-[state=on]:bg-transparent data-[state=on]:text-accent-foreground">
+                  Alternating
+                </ToggleGroupItem>
+                <ToggleGroupItem value="blank" className="flex-1 justify-center text-xs border-0 bg-transparent data-[state=on]:bg-transparent data-[state=on]:text-accent-foreground">
+                  Blank
+                </ToggleGroupItem>
+              </ToggleGroup>
             </div>
           </CardContent>
         </Card>

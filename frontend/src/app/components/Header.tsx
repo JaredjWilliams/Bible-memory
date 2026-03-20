@@ -20,11 +20,11 @@ export function Header() {
 
   return (
     <header className="border-b bg-white relative z-[102]">
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-4 py-2 md:py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <BookOpen className="h-6 w-6 text-blue-600" />
-            <span className="font-semibold text-base sm:text-lg">Bible Memory</span>
+            <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
+            <span className="font-semibold text-sm md:text-base lg:text-lg">Bible Memory</span>
           </Link>
 
           {/* Desktop Navigation - flex max-md:hidden for Edge compatibility (avoids hidden+md:flex specificity issues) */}
@@ -59,14 +59,14 @@ export function Header() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 relative z-[103] ml-auto"
+            className="md:hidden p-1.5 relative z-[103] ml-auto"
             onClick={toggleMobileMenu}
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? (
-              <X className="h-6 w-6" />
+              <X className="h-5 w-5" />
             ) : (
-              <Menu className="h-6 w-6" />
+              <Menu className="h-5 w-5" />
             )}
           </button>
         </div>
