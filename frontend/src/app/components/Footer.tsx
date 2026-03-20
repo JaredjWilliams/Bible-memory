@@ -2,8 +2,8 @@ import { Link } from 'react-router';
 
 export function Footer() {
   return (
-    <footer className="border-t bg-gray-50 py-6">
-      <div className="container mx-auto px-4 text-center text-xs sm:text-sm text-gray-600">
+    <footer className="border-t bg-muted py-6">
+      <div className="container mx-auto px-4 text-center text-xs sm:text-sm text-muted-foreground">
         <div className="space-y-2">
           <p>
             Scripture quotations are from the ESV® Bible (The Holy Bible, English

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/button';
+import { ThemeToggle } from './ThemeToggle';
 import { BookOpen, LogOut, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -19,7 +20,7 @@ export function Header() {
   };
 
   return (
-    <header className="border-b bg-white relative z-[102]">
+    <header className="border-b bg-background relative z-[102]">
       <div className="container mx-auto px-4 py-2 md:py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
@@ -29,6 +30,7 @@ export function Header() {
 
           {/* Desktop Navigation - flex max-md:hidden for Edge compatibility (avoids hidden+md:flex specificity issues) */}
           <nav className="flex max-md:hidden items-center gap-4">
+            <ThemeToggle />
             {user ? (
               <>
                 <Link to="/read">
@@ -38,7 +40,7 @@ export function Header() {
                   <Button variant="ghost">Collections</Button>
                 </Link>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">{user.username}</span>
+                  <span className="text-sm text-muted-foreground">{user.username}</span>
                   <Button variant="outline" size="sm" onClick={logout}>
                     <LogOut className="h-4 w-4 mr-2" />
                     Logout
@@ -80,9 +82,13 @@ export function Header() {
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2, ease: 'easeInOut' }}
               style={{ overflow: 'hidden' }}
-              className="md:hidden absolute top-full left-0 right-0 bg-white border-b shadow-lg"
+              className="md:hidden absolute top-full left-0 right-0 bg-background border-b shadow-lg"
             >
               <div className="p-4 space-y-2">
+                <div className="flex items-center justify-between pb-2 border-b">
+                  <span className="text-sm text-muted-foreground">Theme</span>
+                  <ThemeToggle variant="inline" />
+                </div>
                 {user ? (
                   <>
                     <Link to="/read" onClick={closeMobileMenu} className="block">
@@ -95,7 +101,7 @@ export function Header() {
                         Collections
                       </Button>
                     </Link>
-                    <div className="px-3 py-2 text-sm text-gray-600 border-t mt-2 pt-2">
+                    <div className="px-3 py-2 text-sm text-muted-foreground border-t mt-2 pt-2">
                       Logged in as {user.username}
                     </div>
                     <Button

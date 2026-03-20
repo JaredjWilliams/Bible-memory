@@ -35,7 +35,7 @@ function renderParagraphWithInlineVerses(paragraph: string): React.ReactNode {
     const numMatch = seg.match(/\[(\d+)\]/);
     if (numMatch) {
       return (
-        <sup key={i} className="text-gray-500 font-semibold align-super text-[8px] sm:text-[9px] mr-0.5">
+        <sup key={i} className="text-muted-foreground font-semibold align-super text-[8px] sm:text-[9px] mr-0.5">
           {numMatch[1]}
         </sup>
       );
@@ -155,7 +155,7 @@ export function BibleReader() {
                   {/* Book and Chapter Selectors */}
                   <div className="flex flex-row gap-3">
                     <div className="flex-1 min-w-0">
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">
                         Book
                       </label>
                       <Select value={selectedBook} onValueChange={handleBookChange}>
@@ -173,7 +173,7 @@ export function BibleReader() {
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">
                         Chapter
                       </label>
                       <Select 
@@ -236,10 +236,10 @@ export function BibleReader() {
               <div className="space-y-4">
                 {Array.from({ length: 12 }).map((_, i) => (
                   <div key={i} className="flex gap-3 animate-pulse">
-                    <span className="w-6 h-4 bg-gray-200 rounded flex-shrink-0" />
+                    <span className="w-6 h-4 bg-muted rounded flex-shrink-0" />
                     <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-full" />
-                      <div className="h-4 bg-gray-200 rounded w-3/4" />
+                      <div className="h-4 bg-muted rounded w-full" />
+                      <div className="h-4 bg-muted rounded w-3/4" />
                     </div>
                   </div>
                 ))}
@@ -258,20 +258,20 @@ export function BibleReader() {
                   if (isHeading(para)) {
                     const headingText = formatHeading(para);
                     return headingText ? (
-                      <p key={idx} className="text-center font-extrabold text-gray-700 text-sm sm:text-base mt-4 mb-2 first:mt-0">
+                      <p key={idx} className="text-center font-extrabold text-foreground text-sm sm:text-base mt-4 mb-2 first:mt-0">
                         {headingText}
                       </p>
                     ) : null;
                   }
                   return (
-                    <p key={idx} className="text-gray-800 leading-relaxed text-sm sm:text-base">
+                    <p key={idx} className="text-foreground leading-relaxed text-sm sm:text-base">
                       {renderParagraphWithInlineVerses(para)}
                     </p>
                   );
                 })}
               </motion.div>
             ) : (
-              <p className="text-gray-500 py-4">No verses to display.</p>
+              <p className="text-muted-foreground py-4">No verses to display.</p>
             )}
           </CardContent>
         </Card>
