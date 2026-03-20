@@ -41,7 +41,7 @@ export function CollectionDetail() {
       <div className="container mx-auto px-4 pt-4 pb-8 sm:py-8 text-sm sm:text-base">
         <Card>
           <CardContent className="py-8 text-center">
-            <p className="text-gray-600 mb-4 text-sm sm:text-base">Collection not found</p>
+            <p className="text-muted-foreground mb-4 text-sm sm:text-base">Collection not found</p>
             <Button onClick={() => navigate('/collections')}>Back to Collections</Button>
           </CardContent>
         </Card>
@@ -279,7 +279,7 @@ export function CollectionDetail() {
                     </Select>
                   </div>
                 </div>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   Select Book, Chapter, and verse(s). Use Start/End verse for a range (e.g., John 3:16–21). Requires ESV_API_KEY.
                 </p>
                 <Button onClick={handleESVAdd} disabled={isLoadingESV}>
@@ -305,7 +305,7 @@ export function CollectionDetail() {
                 {verses.map(verse => (
                   <div
                     key={verse.id}
-                    className="p-4 border rounded-lg space-y-2 hover:bg-gray-50 transition-colors"
+                    className="p-4 border rounded-lg space-y-2 hover:bg-muted transition-colors"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <button
@@ -347,7 +347,7 @@ export function CollectionDetail() {
                           .map((para) => para.trim())
                           .filter(Boolean)
                           .map((para, i) => (
-                            <p key={i} className="text-gray-800 leading-relaxed text-sm sm:text-base break-words">
+                            <p key={i} className="text-foreground leading-relaxed text-sm sm:text-base break-words">
                               {para}
                             </p>
                           ))}

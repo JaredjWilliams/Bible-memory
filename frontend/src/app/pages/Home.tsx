@@ -11,10 +11,10 @@ export function Home() {
     <div className="container mx-auto px-4 pt-4 pb-16 sm:py-16 text-sm sm:text-base">
       <div className="max-w-3xl mx-auto text-center space-y-8">
         <div className="space-y-4">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">
             Memorize Scripture Through Typing
           </h1>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             Build collections of Bible verses, practice typing them with real-time
             feedback, and review verses with spaced repetition.
           </p>
@@ -47,7 +47,7 @@ export function Home() {
           <div className="space-y-1.5">
             <div className="text-blue-600 font-semibold text-sm">Organize</div>
             <h3 className="font-semibold text-base">Create Collections</h3>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Group verses by topic, chapter, or study plan
             </p>
           </div>
@@ -61,7 +61,7 @@ export function Home() {
           <div className="space-y-1.5">
             <div className="text-blue-600 font-semibold text-sm">Review</div>
             <h3 className="font-semibold text-base">Spaced Repetition</h3>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Review verses when they're due to maximize retention
             </p>
           </div>

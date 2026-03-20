@@ -29,7 +29,7 @@ export function Collections() {
       <div className="container mx-auto px-4 pt-4 pb-8 sm:py-8 text-sm sm:text-base">
         <Card>
           <CardContent className="py-8 text-center">
-            <p className="text-gray-600 mb-4 text-sm sm:text-base">Please log in to view collections</p>
+            <p className="text-muted-foreground mb-4 text-sm sm:text-base">Please log in to view collections</p>
             <Button onClick={() => navigate('/login')}>Go to Login</Button>
           </CardContent>
         </Card>
@@ -100,7 +100,7 @@ export function Collections() {
             </div>
 
             {currentCollections.length === 0 ? (
-              <div className="text-center py-8 text-gray-500 text-sm sm:text-base">
+              <div className="text-center py-8 text-muted-foreground text-sm sm:text-base">
                 <FolderOpen className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>No collections yet. Create one to get started!</p>
               </div>
@@ -109,13 +109,13 @@ export function Collections() {
                 {currentCollections.map(collection => (
                   <div
                     key={collection.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted transition-colors"
                   >
                     <button
                       onClick={() => navigate(`/collections/${collection.id}`)}
                       className="flex-1 text-left"
                     >
-                      <h3 className="text-sm sm:text-base font-semibold text-gray-800">{collection.name}</h3>
+                      <h3 className="text-sm sm:text-base font-semibold text-foreground">{collection.name}</h3>
                     </button>
                     <Button
                       variant="ghost"

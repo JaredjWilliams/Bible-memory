@@ -18,7 +18,7 @@ export function Copyright() {
           <CardContent className="pt-6 space-y-6">
             <div>
               <h1 className="text-3xl font-bold mb-4">Copyright Information</h1>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 This application uses Scripture from the English Standard Version (ESV)
               </p>
             </div>
@@ -48,10 +48,10 @@ export function Copyright() {
 
               <div>
                 <h2 className="font-semibold text-lg mb-2">Notice Requirement</h2>
-                <p className="text-gray-700 leading-relaxed mb-2">
+                <p className="text-foreground leading-relaxed mb-2">
                   All quotations must include the following notice:
                 </p>
-                <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="bg-muted p-4 rounded-lg">
                   <p className="italic">
                     Scripture quotations are from the ESV® Bible (The Holy Bible, English
                     Standard Version®), copyright © 2001 by Crossway, a publishing
@@ -78,7 +78,7 @@ export function Copyright() {
               </div>
 
               <div className="pt-4 border-t">
-                <p className="text-gray-600 text-xs">
+                <p className="text-muted-foreground text-xs">
                   This application is designed for personal Bible memorization and is not
                   affiliated with or endorsed by Crossway.
                 </p>

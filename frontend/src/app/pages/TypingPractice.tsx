@@ -68,7 +68,7 @@ export function TypingPractice() {
         <div className="max-w-4xl mx-auto">
           <Card>
             <CardContent className="py-8 text-center">
-              <p className="text-gray-600 mb-4 text-sm sm:text-base">Collection not found</p>
+              <p className="text-muted-foreground mb-4 text-sm sm:text-base">Collection not found</p>
               <Button onClick={() => navigate('/collections')}>Back to Collections</Button>
             </CardContent>
           </Card>
@@ -175,7 +175,7 @@ export function TypingPractice() {
 
   const getCharacterClass = (index: number): string => {
     if (index >= typedText.length) {
-      return 'text-gray-300';
+      return 'text-muted-foreground/60';
     }
     return quotesMatch(typedText[index], targetText[index]) ? 'text-green-600' : 'text-red-600';
   };
@@ -233,7 +233,7 @@ export function TypingPractice() {
             <CardContent className="py-12 text-center space-y-4">
               <div className="text-2xl mb-4">🎉</div>
               <h2 className="text-lg sm:text-xl font-bold">Practice Complete!</h2>
-              <p className="text-gray-600 text-sm sm:text-base">
+              <p className="text-muted-foreground text-sm sm:text-base">
                 You've completed typing {practiceVerses.length} verse{practiceVerses.length > 1 ? 's' : ''}.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
@@ -263,9 +263,9 @@ export function TypingPractice() {
 
         {/* Due for Review Banner */}
         {dueCount > 0 && (
-          <Card className="border-blue-500 bg-blue-50">
+          <Card className="border-blue-500 bg-blue-50 dark:bg-blue-950/50 dark:border-blue-800">
             <CardContent className="py-4">
-              <div className="flex items-center gap-2 text-blue-900 text-sm sm:text-base">
+              <div className="flex items-center gap-2 text-blue-900 dark:text-blue-100 text-sm sm:text-base">
                 <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span className="font-semibold">
                   {dueCount} verse{dueCount > 1 ? 's' : ''} due for review
@@ -376,7 +376,7 @@ export function TypingPractice() {
               />
             </div>
 
-            <div className="text-xs sm:text-sm text-gray-500 text-center">
+            <div className="text-xs sm:text-sm text-muted-foreground text-center">
               Click above and type the verse. Green = correct, red = mistake.
             </div>
           </CardContent>

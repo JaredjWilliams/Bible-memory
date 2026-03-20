@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { toast } from 'sonner';
 
 export function Login() {
@@ -42,7 +43,10 @@ export function Login() {
   };
 
   return (
-    <div className="container mx-auto px-4 flex-1 flex items-center justify-center pt-4 pb-8 sm:py-8">
+    <div className="container mx-auto px-4 flex-1 flex items-center justify-center pt-4 pb-8 sm:py-8 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <div className="max-w-md w-full">
         <Card>
           <CardHeader>
@@ -79,7 +83,7 @@ export function Login() {
                 {isLoading ? 'Logging in...' : 'Login'}
               </Button>
             </form>
-            <div className="mt-4 text-center text-sm text-gray-600">
+            <div className="mt-4 text-center text-sm text-muted-foreground">
               Don't have an account?{' '}
               <Link to="/signup" className="text-blue-600 hover:underline">
                 Sign up
