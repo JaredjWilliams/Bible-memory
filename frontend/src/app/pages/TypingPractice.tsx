@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
-import { useData, Verse } from '../context/DataContext';
+import { useData, Verse, Note } from '../context/DataContext';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { Card, CardContent } from '../components/ui/card';
+import { Textarea } from '../components/ui/textarea';
 import { cn } from '../components/ui/utils';
 import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group';
-import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { ArrowLeft, StickyNote, Trash2, Plus, Check } from 'lucide-react';
 import { motion } from 'motion/react';
 
 type PracticeMode = 'full' | 'alternating' | 'blank';
@@ -29,7 +30,7 @@ export function TypingPractice() {
   const [searchParams] = useSearchParams();
   const verseIdParam = searchParams.get('verseId');
   const navigate = useNavigate();
-  const { collections, getVersesByCollection, recordPractice, getDueVerses } = useData();
+  const { collections, getVersesByCollection, recordPractice, getNotes, createNote, updateNote, deleteNote } = useData();
 
   const [verses, setVerses] = useState<Verse[]>([]);
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
@@ -38,7 +39,24 @@ export function TypingPractice() {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [practiceMode, setPracticeMode] = useState<PracticeMode>('full');
   const [hasRetriedCurrentVerse, setHasRetriedCurrentVerse] = useState(false);
+  const [notePanelOpen, setNotePanelOpen] = useState(false);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [draftContent, setDraftContent] = useState('');
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState<Record<string, string>>({});
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const noteInputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Derive practiceVerses and currentVerse early so useEffects can reference them
+  const practiceVerses = verseIdParam
+    ? (() => {
+        const v = verses.find((x) => x.id === verseIdParam);
+        return v ? [v] : verses;
+      })()
+    : verses;
+  const currentVerse = practiceVerses[currentVerseIndex];
 
   const resetPractice = useCallback(() => {
     setCurrentVerseIndex(0);
@@ -62,6 +80,95 @@ export function TypingPractice() {
     const timer = setTimeout(() => inputRef.current?.focus(), 0);
     return () => clearTimeout(timer);
   }, [currentVerseIndex, verses.length]);
+
+  // Load notes when current verse changes
+  useEffect(() => {
+    if (!currentVerse?.id) {
+      setNotes([]);
+      setDraftContent('');
+      setEditingContent({});
+      return;
+    }
+    getNotes(currentVerse.id).then(setNotes).catch(() => setNotes([]));
+    setDraftContent('');
+    setEditingContent({});
+    setEditingNoteId(null);
+  }, [currentVerse?.id, getNotes]);
+
+  // Focus note input when panel opens (mobile)
+  useEffect(() => {
+    if (notePanelOpen) {
+      const timer = setTimeout(() => noteInputRef.current?.focus(), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [notePanelOpen]);
+
+  // Clear saved checkmark after 2 seconds
+  useEffect(() => {
+    if (savedAt === null) return;
+    const timer = setTimeout(() => setSavedAt(null), 2000);
+    return () => clearTimeout(timer);
+  }, [savedAt]);
+
+  const handleToggleNotePanel = () => {
+    inputRef.current?.blur();
+    setNotePanelOpen((prev) => !prev);
+  };
+
+  const handleSaveDraft = async () => {
+    if (!currentVerse?.id || !draftContent.trim() || isSaving) return;
+    setIsSaving(true);
+    try {
+      const note = await createNote(currentVerse.id, draftContent.trim());
+      setNotes((prev) => [...prev, note]);
+      setDraftContent('');
+      setSavedAt(Date.now());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save note');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateNote = async (noteId: string) => {
+    const content = editingContent[noteId];
+    if (content === undefined || isSaving) return;
+    setIsSaving(true);
+    try {
+      const updated = await updateNote(noteId, content);
+      setNotes((prev) => prev.map((n) => (n.id === noteId ? updated : n)));
+      setEditingContent((prev) => {
+        const next = { ...prev };
+        delete next[noteId];
+        return next;
+      });
+      setEditingNoteId(null);
+      setSavedAt(Date.now());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update note');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      await deleteNote(noteId);
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      setEditingContent((prev) => {
+        const next = { ...prev };
+        delete next[noteId];
+        return next;
+      });
+      setEditingNoteId(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete note');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const collection = collectionId ? collections.find(c => c.id === collectionId) : null;
 
@@ -98,14 +205,6 @@ export function TypingPractice() {
     );
   }
 
-  const dueCount = getDueVerses(collectionId);
-  const practiceVerses = verseIdParam
-    ? (() => {
-        const v = verses.find((x) => x.id === verseIdParam);
-        return v ? [v] : verses;
-      })()
-    : verses;
-  const currentVerse = practiceVerses[currentVerseIndex];
   const targetText = currentVerse?.text || '';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,13 +296,13 @@ export function TypingPractice() {
     }
     if (isCharVisible(index)) {
       return (
-        <span key={index} className="text-gray-300">
+        <span key={index} className="text-muted-foreground/70">
           {char}
         </span>
       );
     }
     return (
-      <span key={index} className="text-gray-300">
+      <span key={index} className="text-muted-foreground/70">
         {char === ' ' ? ' ' : '_'}
       </span>
     );
@@ -267,20 +366,6 @@ export function TypingPractice() {
           <h1 className="text-lg sm:text-xl font-bold">{collection.name}</h1>
         </div>
 
-        {/* Due for Review Banner */}
-        {dueCount > 0 && (
-          <Card className="border-blue-500 bg-blue-50 dark:bg-blue-950/50 dark:border-blue-800">
-            <CardContent className="py-4">
-              <div className="flex items-center gap-2 text-blue-900 dark:text-blue-100 text-sm sm:text-base">
-                <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="font-semibold">
-                  {dueCount} verse{dueCount > 1 ? 's' : ''} due for review
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Progress - hidden on mobile, shown on sm+ */}
         <div className="max-sm:hidden block space-y-3">
           <div className="space-y-1">
@@ -328,65 +413,184 @@ export function TypingPractice() {
           </div>
         </div>
 
-        {/* Typing Area - order-1 mobile (first), order-2 desktop (below toggle) */}
-        <Card className="relative order-1 md:order-2">
-          <div
-            className={cn(
-              'sm:hidden absolute top-4 right-6 text-xs font-medium z-10',
-              typedText.length === 0
-                ? 'text-muted-foreground'
-                : correctPercent >= 80
-                  ? 'text-green-600'
-                  : correctPercent >= 50
-                    ? 'text-orange-500'
-                    : 'text-red-600'
-            )}
-          >
-            {typedText.length > 0 ? `${Math.round(correctPercent)}%` : '0%'}
-          </div>
-          <CardContent className="pt-4 sm:pt-6 space-y-4">
-            <h2 className="text-base font-semibold text-blue-600 text-center">
-              {currentVerse?.reference}
-            </h2>
+        {/* Typing Area + Note Panel - order-1 mobile (first), order-2 desktop (below toggle) */}
+        <div className="flex flex-col md:flex-row gap-2 md:gap-4 flex-1 min-w-0 order-1 md:order-2">
+          {/* Verse card - compresses when note open on desktop */}
+          <Card className="relative flex-1 min-w-0 order-2 md:order-1">
             <div
-              className="font-mono text-sm sm:text-base leading-relaxed p-4 bg-muted rounded-lg min-h-[120px] max-h-[300px] overflow-auto relative cursor-text"
-              onClick={() => inputRef.current?.focus()}
+              className={cn(
+                'sm:hidden absolute top-4 right-6 text-xs font-medium z-10',
+                typedText.length === 0
+                  ? 'text-muted-foreground'
+                  : correctPercent >= 80
+                    ? 'text-green-600'
+                    : correctPercent >= 50
+                      ? 'text-orange-500'
+                      : 'text-red-600'
+              )}
             >
-              {targetText.split('').map((char, index) => (
-                <span key={index}>
-                  {index === typedText.length && (
-                    <span className="inline-block w-0.5 h-4 bg-blue-600 animate-pulse mr-0.5 align-middle -translate-y-1 translate-x-0.5" />
+              {typedText.length > 0 ? `${Math.round(correctPercent)}%` : '0%'}
+            </div>
+            <CardContent className="pt-4 sm:pt-6 space-y-4">
+              {/* Header: note icon (left) + verse title (center) */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative shrink-0 h-8 w-8 text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground"
+                  onClick={handleToggleNotePanel}
+                  aria-label={notePanelOpen ? 'Close notes' : 'Open notes'}
+                >
+                  <StickyNote className={cn('h-4 w-4', notePanelOpen && 'fill-current')} />
+                  {notes.length > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[1rem] h-4 px-1 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
+                      {notes.length}
+                    </span>
                   )}
-                  {renderDisplayChar(char, index)}
-                </span>
-              ))}
-              <input
-                ref={inputRef}
-                type="text"
-                value={typedText}
-                onChange={handleInputChange}
-                onKeyDown={(e) => {
-                  if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Backspace'].includes(e.key)) {
-                    e.preventDefault();
-                    return;
-                  }
-                  // When next character is a space, only allow space key
-                  const nextChar = targetText[typedText.length];
-                  if (nextChar === ' ' && e.key !== ' ') {
-                    e.preventDefault();
-                  }
-                }}
-                maxLength={targetText.length}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-text bg-transparent text-transparent"
-                aria-label="Type the verse"
-              />
-            </div>
+                </Button>
+                <h2 className="flex-1 text-base font-semibold text-blue-600 dark:text-blue-400 text-center">
+                  {currentVerse?.reference}
+                </h2>
+                <div className="w-8 shrink-0" aria-hidden />
+              </div>
+              <div
+                className="font-mono text-sm sm:text-base leading-relaxed p-4 bg-muted dark:bg-muted/50 rounded-lg min-h-[120px] max-h-[300px] overflow-auto relative cursor-text"
+                onClick={() => inputRef.current?.focus()}
+              >
+                {targetText.split('').map((char, index) => (
+                  <span key={index}>
+                    {index === typedText.length && (
+                      <span className="inline-block w-0.5 h-4 bg-blue-600 animate-pulse mr-0.5 align-middle -translate-y-1 translate-x-0.5" />
+                    )}
+                    {renderDisplayChar(char, index)}
+                  </span>
+                ))}
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={typedText}
+                  onChange={handleInputChange}
+                  onKeyDown={(e) => {
+                    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Backspace'].includes(e.key)) {
+                      e.preventDefault();
+                      return;
+                    }
+                    const nextChar = targetText[typedText.length];
+                    if (nextChar === ' ' && e.key !== ' ') {
+                      e.preventDefault();
+                    }
+                  }}
+                  maxLength={targetText.length}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-text bg-transparent text-transparent"
+                  aria-label="Type the verse"
+                />
+              </div>
 
-            <div className="text-xs sm:text-sm text-muted-foreground text-center">
-              Click above and type the verse. Green = correct, red = mistake.
-            </div>
-          </CardContent>
-        </Card>
+              <div className="text-xs sm:text-sm text-muted-foreground text-center">
+                Click above and type the verse. Green = correct, red = mistake.
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Note panel - above on mobile, right on desktop */}
+          {notePanelOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
+              className="order-1 md:order-2 w-full md:w-80 md:shrink-0"
+            >
+              <Card className="h-full border-input bg-background dark:bg-background dark:border-input gap-2 md:gap-6">
+                <CardContent className="px-3 pt-2 pb-2 space-y-2 md:px-6 md:pt-4 md:pb-4 md:space-y-4 [&:last-child]:pb-2 md:[&:last-child]:pb-6">
+                  <div className="flex items-center justify-between gap-2 min-h-0">
+                    <h3 className="text-xs font-semibold text-foreground dark:text-foreground md:text-sm shrink-0">Notes</h3>
+                    {savedAt !== null && (
+                      <span className="flex items-center gap-0.5 text-[10px] text-green-600 dark:text-green-400 md:text-xs shrink-0">
+                        <Check className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                        Saved
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Add note - draft */}
+                  <div className="flex items-center gap-1.5 md:gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => noteInputRef.current?.focus()}
+                      className="h-7 px-2 text-xs shrink-0 dark:bg-input/30 dark:border-input dark:hover:bg-input/50 md:h-8 md:px-3"
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-0.5 md:h-4 md:w-4 md:mr-1" />
+                      Add note
+                    </Button>
+                  </div>
+
+                  {/* New note draft */}
+                  <div className="space-y-1.5 md:space-y-2">
+                    <Textarea
+                      ref={noteInputRef}
+                      placeholder="Add a note..."
+                      value={draftContent}
+                      onChange={(e) => setDraftContent(e.target.value)}
+                      className="min-h-[56px] md:min-h-[80px] py-2 px-2.5 text-sm bg-muted/50 dark:bg-muted/30 border-input text-foreground dark:text-foreground placeholder:text-muted-foreground"
+                    />
+                    <div className="flex gap-1.5 md:gap-2">
+                      <Button
+                        size="sm"
+                        onClick={handleSaveDraft}
+                        disabled={!draftContent.trim() || isSaving}
+                        className="h-7 text-xs flex-1 md:h-8 md:text-sm"
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* List of saved notes */}
+                  <div className="space-y-2 md:space-y-3 max-h-[140px] md:max-h-[200px] overflow-auto">
+                    {notes.map((note) => (
+                      <div
+                        key={note.id}
+                        className="p-2 rounded-md border border-input bg-muted/30 dark:bg-muted/20 dark:border-input md:p-3 md:rounded-lg"
+                      >
+                        <Textarea
+                          placeholder="Note content..."
+                          value={editingContent[note.id] ?? note.content}
+                          onChange={(e) => {
+                            setEditingContent((prev) => ({ ...prev, [note.id]: e.target.value }));
+                            setEditingNoteId(note.id);
+                          }}
+                          onFocus={() => setEditingNoteId(note.id)}
+                          className="min-h-[44px] md:min-h-[60px] py-1.5 px-2 text-xs md:text-sm bg-background dark:bg-background border-input text-foreground dark:text-foreground"
+                        />
+                        <div className="flex gap-1.5 mt-1.5 md:gap-2 md:mt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleUpdateNote(note.id)}
+                            disabled={isSaving || (editingContent[note.id] ?? note.content) === note.content}
+                            className="h-7 text-xs flex-1 md:h-8 md:text-sm"
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDeleteNote(note.id)}
+                            disabled={isSaving}
+                            className="h-7 w-7 shrink-0 p-0 md:h-8 md:w-8"
+                          >
+                            <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </div>
 
         {/* Practice Mode Toggle - order-2 mobile (below input), order-1 desktop (above input) */}
         <Card className="order-2 md:order-1">
