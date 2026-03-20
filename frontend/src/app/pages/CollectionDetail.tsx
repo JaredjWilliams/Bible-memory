@@ -38,7 +38,7 @@ export function CollectionDetail() {
 
   if (!collectionId || !collection) {
     return (
-      <div className="container mx-auto px-4 py-8 text-sm sm:text-base">
+      <div className="container mx-auto px-4 pt-4 pb-8 sm:py-8 text-sm sm:text-base">
         <Card>
           <CardContent className="py-8 text-center">
             <p className="text-gray-600 mb-4 text-sm sm:text-base">Collection not found</p>
@@ -127,7 +127,7 @@ export function CollectionDetail() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 text-sm sm:text-base">
+    <div className="container mx-auto px-4 pt-4 pb-8 sm:py-8 text-sm sm:text-base">
       <div className="max-w-4xl mx-auto space-y-2">
         {/* Header: mobile = back row, then title+play row (play right); desktop = back | title left, play right */}
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">

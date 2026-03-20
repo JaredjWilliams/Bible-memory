@@ -4,7 +4,7 @@ import { Home } from 'lucide-react';
 
 export function NotFound() {
   return (
-    <div className="container mx-auto px-4 py-16">
+    <div className="container mx-auto px-4 pt-4 pb-16 sm:py-16">
       <div className="max-w-2xl mx-auto text-center space-y-6">
         <div className="text-6xl font-bold text-gray-300">404</div>
         <h1 className="text-3xl font-bold">Page Not Found</h1>

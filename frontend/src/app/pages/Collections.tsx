@@ -26,7 +26,7 @@ export function Collections() {
   // Redirect if not logged in
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-8 text-sm sm:text-base">
+      <div className="container mx-auto px-4 pt-4 pb-8 sm:py-8 text-sm sm:text-base">
         <Card>
           <CardContent className="py-8 text-center">
             <p className="text-gray-600 mb-4 text-sm sm:text-base">Please log in to view collections</p>
@@ -73,7 +73,7 @@ export function Collections() {
   );
 
   return (
-    <div className="container mx-auto px-4 py-8 text-sm sm:text-base">
+    <div className="container mx-auto px-4 pt-4 pb-8 sm:py-8 text-sm sm:text-base">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Collections */}
         <Card>

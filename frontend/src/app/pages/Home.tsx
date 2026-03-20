@@ -8,13 +8,13 @@ export function Home() {
   const navigate = useNavigate();
 
   return (
-    <div className="container mx-auto px-4 py-16">
+    <div className="container mx-auto px-4 pt-4 pb-16 sm:py-16 text-sm sm:text-base">
       <div className="max-w-3xl mx-auto text-center space-y-8">
         <div className="space-y-4">
-          <h1 className="text-5xl font-bold text-gray-900">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
             Memorize Scripture Through Typing
           </h1>
-          <p className="text-xl text-gray-600">
+          <p className="text-gray-600">
             Build collections of Bible verses, practice typing them with real-time
             feedback, and review verses with spaced repetition.
           </p>
@@ -43,25 +43,25 @@ export function Home() {
           )}
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 pt-12">
-          <div className="space-y-2">
-            <div className="text-blue-600 font-semibold">Organize</div>
-            <h3 className="font-semibold">Create Collections</h3>
-            <p className="text-sm text-gray-600">
+        <div className="grid md:grid-cols-3 gap-6 pt-8">
+          <div className="space-y-1.5">
+            <div className="text-blue-600 font-semibold text-sm">Organize</div>
+            <h3 className="font-semibold text-base">Create Collections</h3>
+            <p className="text-gray-600">
               Group verses by topic, chapter, or study plan
             </p>
           </div>
-          <div className="space-y-2">
-            <div className="text-blue-600 font-semibold">Practice</div>
-            <h3 className="font-semibold">Type to Memorize</h3>
-            <p className="text-sm text-gray-600">
+          <div className="space-y-1.5">
+            <div className="text-blue-600 font-semibold text-sm">Practice</div>
+            <h3 className="font-semibold text-base">Type to Memorize</h3>
+            <p className="text-gray-600">
               Real-time feedback shows correct and incorrect characters
             </p>
           </div>
-          <div className="space-y-2">
-            <div className="text-blue-600 font-semibold">Review</div>
-            <h3 className="font-semibold">Spaced Repetition</h3>
-            <p className="text-sm text-gray-600">
+          <div className="space-y-1.5">
+            <div className="text-blue-600 font-semibold text-sm">Review</div>
+            <h3 className="font-semibold text-base">Spaced Repetition</h3>
+            <p className="text-gray-600">
               Review verses when they're due to maximize retention
             </p>
           </div>

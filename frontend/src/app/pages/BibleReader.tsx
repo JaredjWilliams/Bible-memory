@@ -115,11 +115,11 @@ export function BibleReader() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 text-sm sm:text-base">
+    <div className="container mx-auto px-4 pt-4 pb-8 sm:py-8 text-sm sm:text-base">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Navigation Controls */}
         <Card className="gap-4">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pt-3 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pt-3 pb-2 pr-4">
             <CardTitle className="text-base">Read Scripture</CardTitle>
             <Button
               variant="ghost"
