@@ -37,6 +37,7 @@ export function TypingPractice() {
   const [isComplete, setIsComplete] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [practiceMode, setPracticeMode] = useState<PracticeMode>('full');
+  const [hasRetriedCurrentVerse, setHasRetriedCurrentVerse] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const resetPractice = useCallback(() => {
@@ -44,6 +45,7 @@ export function TypingPractice() {
     setTypedText('');
     setIsComplete(false);
     setStartTime(null);
+    setHasRetriedCurrentVerse(false);
   }, []);
 
   useEffect(() => {
@@ -57,8 +59,9 @@ export function TypingPractice() {
   }, [practiceMode, resetPractice]);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, [currentVerseIndex]);
+    const timer = setTimeout(() => inputRef.current?.focus(), 0);
+    return () => clearTimeout(timer);
+  }, [currentVerseIndex, verses.length]);
 
   const collection = collectionId ? collections.find(c => c.id === collectionId) : null;
 
@@ -124,6 +127,7 @@ export function TypingPractice() {
     if (correctPercent < 90) {
       toast.error('You did not meet the 90% mark. Please retry this verse.');
       setTypedText('');
+      setHasRetriedCurrentVerse(true);
       return;
     }
 
@@ -131,9 +135,10 @@ export function TypingPractice() {
     const elapsedSeconds = startTime ? (endTime - startTime) / 1000 : 0;
     const wordCount = targetText.split(' ').length;
     const success = elapsedSeconds < wordCount * 5;
+    const incrementInterval = practiceMode === 'blank' && !hasRetriedCurrentVerse && success;
 
-    recordPractice(currentVerse.id, success).catch(() => {
-      toast.error('Failed to save practice result');
+    recordPractice(currentVerse.id, success, incrementInterval).catch((err) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to save practice result');
     });
 
     setTimeout(() => {
@@ -141,6 +146,7 @@ export function TypingPractice() {
         setCurrentVerseIndex(currentVerseIndex + 1);
         setTypedText('');
         setStartTime(null);
+        setHasRetriedCurrentVerse(false);
       } else {
         setIsComplete(true);
       }
@@ -276,7 +282,7 @@ export function TypingPractice() {
         )}
 
         {/* Progress - hidden on mobile, shown on sm+ */}
-        <div className="hidden sm:block space-y-3">
+        <div className="max-sm:hidden block space-y-3">
           <div className="space-y-1">
             <div className="flex justify-between text-sm">
               <span>Overall Progress</span>
@@ -343,7 +349,7 @@ export function TypingPractice() {
               {currentVerse?.reference}
             </h2>
             <div
-              className="font-mono text-sm sm:text-base leading-relaxed p-4 bg-gray-50 rounded-lg min-h-[120px] max-h-[300px] overflow-auto relative cursor-text"
+              className="font-mono text-sm sm:text-base leading-relaxed p-4 bg-muted rounded-lg min-h-[120px] max-h-[300px] overflow-auto relative cursor-text"
               onClick={() => inputRef.current?.focus()}
             >
               {targetText.split('').map((char, index) => (
@@ -371,7 +377,7 @@ export function TypingPractice() {
                   }
                 }}
                 maxLength={targetText.length}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-text"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-text bg-transparent text-transparent"
                 aria-label="Type the verse"
               />
             </div>

@@ -5,7 +5,6 @@ import org.biblememory.controller.dto.DueVerseDto;
 import org.biblememory.controller.dto.PracticeResultRequest;
 import org.biblememory.model.Verse;
 import org.biblememory.service.SpacedRepetitionService;
-import org.biblememory.service.VerseService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,11 +15,9 @@ import java.util.List;
 public class PracticeController {
 
     private final SpacedRepetitionService spacedRepetitionService;
-    private final VerseService verseService;
 
-    public PracticeController(SpacedRepetitionService spacedRepetitionService, VerseService verseService) {
+    public PracticeController(SpacedRepetitionService spacedRepetitionService) {
         this.spacedRepetitionService = spacedRepetitionService;
-        this.verseService = verseService;
     }
 
     @PostMapping("/result")
@@ -33,7 +30,8 @@ public class PracticeController {
                 userId,
                 request.verseIds(),
                 request.accuracy(),
-                request.completed()
+                request.completed(),
+                Boolean.TRUE.equals(request.incrementInterval())
         );
         return ResponseEntity.noContent().build();
     }

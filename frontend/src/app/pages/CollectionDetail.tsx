@@ -146,18 +146,20 @@ export function CollectionDetail() {
             </div>
           </div>
           {verses.length > 0 && (
-            <Button size="icon" className="hidden sm:flex shrink-0" onClick={() => navigate(`/collections/${collectionId}/practice`)} title="Typing">
+            <Button size="icon" className="max-sm:hidden shrink-0" onClick={() => navigate(`/collections/${collectionId}/practice`)} title="Typing">
               <Play className="h-4 w-4" />
             </Button>
           )}
         </div>
 
-        {/* Add Verses */}
-        <Card>
-          <CardHeader>
+        {/* Two-column layout on desktop: Add Verses (left) | Verses list (right) */}
+        <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
+        {/* Add Verses - compact on left for desktop */}
+        <Card className="md:w-80 md:shrink-0">
+          <CardHeader className="pb-0 md:py-4 md:pb-0">
             <CardTitle className="text-base">Add Verses</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="md:py-4 md:pt-0">
             <Tabs value={activeAddTab} onValueChange={setActiveAddTab}>
               <TabsList className="relative grid w-full grid-cols-2">
                 <motion.div
@@ -201,7 +203,7 @@ export function CollectionDetail() {
               </TabsContent>
               
               <TabsContent value="esv" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label>Book</Label>
                     <Select
@@ -290,8 +292,8 @@ export function CollectionDetail() {
           </CardContent>
         </Card>
 
-        {/* Verse List */}
-        <Card>
+        {/* Verse List - right side on desktop */}
+        <Card className="md:flex-1 md:min-w-0">
           <CardHeader>
             <CardTitle className="text-base">Verses ({verses.length})</CardTitle>
           </CardHeader>
@@ -359,6 +361,7 @@ export function CollectionDetail() {
             )}
           </CardContent>
         </Card>
+        </div>
       </div>
 
       {/* Delete Verse Dialog */}

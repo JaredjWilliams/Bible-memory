@@ -16,5 +16,8 @@ public record PracticeResultRequest(
         Double accuracy,
 
         @NotNull(message = "Completed flag required")
-        Boolean completed
+        Boolean completed,
+
+        /** When true, advance spaced-repetition interval. Only set when verse completed in blank mode on first try. Null/false = do not advance. */
+        Boolean incrementInterval
 ) {}

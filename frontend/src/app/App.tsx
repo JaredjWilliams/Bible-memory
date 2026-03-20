@@ -10,6 +10,7 @@ export default function App() {
       defaultTheme="system"
       enableSystem
       storageKey="bible-memory-theme"
+      disableTransitionOnChange
     >
       <RouterProvider router={router} />
       <Toaster />

@@ -38,7 +38,7 @@ interface DataContextType {
   addVerse: (collectionId: string, reference: string, text: string, source?: string) => Promise<void>;
   addBulkVerses: (collectionId: string, range: string) => Promise<{ added: number; skipped: number }>;
   deleteVerse: (verseId: string) => Promise<void>;
-  recordPractice: (verseId: string, success: boolean) => Promise<void>;
+  recordPractice: (verseId: string, success: boolean, incrementInterval?: boolean) => Promise<void>;
   getDueVerses: (collectionId: string) => number;
   isLoading: boolean;
   refreshData: () => Promise<void>;
@@ -299,14 +299,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setVerses((prev) => prev.filter((v) => v.id !== verseId));
   };
 
-  const recordPractice = async (verseId: string, success: boolean) => {
+  const recordPractice = async (verseId: string, success: boolean, incrementInterval = false) => {
     if (!user) return;
+    const verseIdNum = parseInt(verseId, 10);
+    if (Number.isNaN(verseIdNum)) {
+      throw new Error('Invalid verse ID');
+    }
     await api.post('/api/practice/result', {
-      verseIds: [Number(verseId)],
+      verseIds: [verseIdNum],
       accuracy: success ? 100 : 0,
       completed: true,
+      incrementInterval,
     });
-    await loadDueVerses();
+    loadDueVerses().catch(() => {
+      // Refresh due count in background; don't fail the save
+    });
   };
 
   const getDueVerses = (collectionId: string): number => {

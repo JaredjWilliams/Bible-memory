@@ -20,6 +20,8 @@ public class SpacedRepetitionService {
 
     private static final double INITIAL_EF = 2.5;
     private static final double MIN_EF = 1.3;
+    /** Cap interval to prevent timestamp overflow (PostgreSQL range ~year 294276) */
+    private static final long MAX_INTERVAL_DAYS = 3650; // ~10 years
 
     private final VerseProgressRepository progressRepository;
     private final VerseRepository verseRepository;
@@ -43,7 +45,7 @@ public class SpacedRepetitionService {
     }
 
     @Transactional
-    public void recordPractice(Long userId, List<Long> verseIds, double accuracyPercent, boolean completed) {
+    public void recordPractice(Long userId, List<Long> verseIds, double accuracyPercent, boolean completed, boolean incrementInterval) {
         int q = accuracyToQuality(accuracyPercent, completed);
         for (Long verseId : verseIds) {
             VerseProgress p = progressRepository.findByVerseIdAndUserId(verseId, userId)
@@ -57,17 +59,21 @@ public class SpacedRepetitionService {
                     });
             Instant now = Instant.now();
             p.setLastPracticedAt(now);
-            if (q < 3) {
-                p.setRepetitionCount(0);
+            if (incrementInterval) {
+                if (q < 3) {
+                    p.setRepetitionCount(0);
+                } else {
+                    p.setRepetitionCount(p.getRepetitionCount() + 1);
+                    double ef = p.getEasinessFactor();
+                    ef = ef + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
+                    if (ef < MIN_EF) ef = MIN_EF;
+                    p.setEasinessFactor(ef);
+                }
+                long intervalDays = intervalDays(p.getRepetitionCount(), p.getEasinessFactor());
+                p.setNextReviewAt(now.plusSeconds(intervalDays * 24 * 3600));
             } else {
-                p.setRepetitionCount(p.getRepetitionCount() + 1);
-                double ef = p.getEasinessFactor();
-                ef = ef + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
-                if (ef < MIN_EF) ef = MIN_EF;
-                p.setEasinessFactor(ef);
+                p.setNextReviewAt(now);
             }
-            long intervalDays = intervalDays(p.getRepetitionCount(), p.getEasinessFactor());
-            p.setNextReviewAt(now.plusSeconds(intervalDays * 24 * 3600));
             progressRepository.save(p);
         }
     }
@@ -80,7 +86,7 @@ public class SpacedRepetitionService {
         for (int i = 3; i <= n; i++) {
             prev = prev * ef;
         }
-        return Math.max(1, Math.round(prev));
+        return Math.min(MAX_INTERVAL_DAYS, Math.max(1, Math.round(prev)));
     }
 
     @Transactional(readOnly = true)

@@ -4,12 +4,6 @@ import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { Moon, Sun, Monitor } from 'lucide-react';
 import { Button } from './ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu';
 type ThemeToggleVariant = 'dropdown' | 'inline';
 
 interface ThemeToggleProps {
@@ -23,6 +17,11 @@ export function ThemeToggle({ variant = 'dropdown' }: ThemeToggleProps) {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleToggleTheme = () => {
+    const nextTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+  };
 
   if (!mounted) {
     return variant === 'inline' ? (
@@ -81,26 +80,14 @@ export function ThemeToggle({ variant = 'dropdown' }: ThemeToggleProps) {
   const Icon = resolvedTheme === 'dark' ? Moon : Sun;
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-9" aria-label="Toggle theme">
-          <Icon className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="z-[110]">
-        <DropdownMenuItem onClick={() => setTheme('light')}>
-          <Sun className="mr-2 h-4 w-4" />
-          Light
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')}>
-          <Monitor className="mr-2 h-4 w-4" />
-          System
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('dark')}>
-          <Moon className="mr-2 h-4 w-4" />
-          Dark
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="size-9"
+      aria-label="Toggle theme"
+      onClick={handleToggleTheme}
+    >
+      <Icon className="h-4 w-4" />
+    </Button>
   );
 }
