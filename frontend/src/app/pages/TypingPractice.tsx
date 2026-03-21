@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
-import { useData, Verse, Note } from '../context/DataContext';
+import { useData, Verse, Note, VersePracticeStats } from '../context/DataContext';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { Card, CardContent } from '../components/ui/card';
@@ -30,7 +30,7 @@ export function TypingPractice() {
   const [searchParams] = useSearchParams();
   const verseIdParam = searchParams.get('verseId');
   const navigate = useNavigate();
-  const { collections, getVersesByCollection, recordPractice, getNotes, createNote, updateNote, deleteNote } = useData();
+  const { collections, getVersesByCollection, recordPractice, getVersePracticeStats, getNotes, createNote, updateNote, deleteNote } = useData();
 
   const [verses, setVerses] = useState<Verse[]>([]);
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
@@ -46,6 +46,7 @@ export function TypingPractice() {
   const [editingContent, setEditingContent] = useState<Record<string, string>>({});
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [practiceStats, setPracticeStats] = useState<Record<string, VersePracticeStats>>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const noteInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -94,6 +95,16 @@ export function TypingPractice() {
     setEditingContent({});
     setEditingNoteId(null);
   }, [currentVerse?.id, getNotes]);
+
+  // Load practice stats when practice verses change
+  const practiceVerseIds = practiceVerses.map((v) => v.id);
+  useEffect(() => {
+    if (practiceVerseIds.length === 0) {
+      setPracticeStats({});
+      return;
+    }
+    getVersePracticeStats(practiceVerseIds).then(setPracticeStats).catch(() => setPracticeStats({}));
+  }, [practiceVerseIds.join(','), getVersePracticeStats]);
 
   // Focus note input when panel opens (mobile)
   useEffect(() => {
@@ -236,9 +247,11 @@ export function TypingPractice() {
     const success = elapsedSeconds < wordCount * 5;
     const incrementInterval = practiceMode === 'blank' && !hasRetriedCurrentVerse && success;
 
-    recordPractice(currentVerse.id, success, incrementInterval).catch((err) => {
-      toast.error(err instanceof Error ? err.message : 'Failed to save practice result');
-    });
+    recordPractice(currentVerse.id, success, incrementInterval, practiceMode)
+      .then(() => getVersePracticeStats(practiceVerses.map((v) => v.id)).then(setPracticeStats).catch(() => {}))
+      .catch((err) => {
+        toast.error(err instanceof Error ? err.message : 'Failed to save practice result');
+      });
 
     setTimeout(() => {
       if (currentVerseIndex < practiceVerses.length - 1) {
@@ -486,6 +499,16 @@ export function TypingPractice() {
                 />
               </div>
 
+              {currentVerse && (
+                <div className="text-xs text-muted-foreground text-center flex items-center justify-center gap-3 flex-wrap">
+                  <span>Full: {practiceStats[currentVerse.id]?.fullCount ?? 0}</span>
+                  <span aria-hidden>|</span>
+                  <span>Alternating: {practiceStats[currentVerse.id]?.alternatingCount ?? 0}</span>
+                  <span aria-hidden>|</span>
+                  <span>Blank: {practiceStats[currentVerse.id]?.blankCount ?? 0}</span>
+                </div>
+              )}
+
               <div className="text-xs sm:text-sm text-muted-foreground text-center">
                 Click above and type the verse. Green = correct, red = mistake.
               </div>
@@ -553,6 +576,15 @@ export function TypingPractice() {
                         key={note.id}
                         className="p-2 rounded-md border border-input bg-muted/30 dark:bg-muted/20 dark:border-input md:p-3 md:rounded-lg"
                       >
+                        <div className="text-[10px] md:text-xs text-muted-foreground mb-1">
+                          {new Date(note.createdAt).toLocaleDateString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })}
+                        </div>
                         <Textarea
                           placeholder="Note content..."
                           value={editingContent[note.id] ?? note.content}

@@ -1,5 +1,6 @@
 package org.biblememory.service;
 
+import org.biblememory.controller.dto.VersePracticeStatsDto;
 import org.biblememory.model.Verse;
 import org.biblememory.model.VerseProgress;
 import org.biblememory.repository.VerseProgressRepository;
@@ -9,7 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * SM-2-style spaced repetition: I(1)=1d, I(2)=6d, I(n)=I(n-1)×EF.
@@ -45,8 +48,9 @@ public class SpacedRepetitionService {
     }
 
     @Transactional
-    public void recordPractice(Long userId, List<Long> verseIds, double accuracyPercent, boolean completed, boolean incrementInterval) {
+    public void recordPractice(Long userId, List<Long> verseIds, double accuracyPercent, boolean completed, boolean incrementInterval, String practiceMode) {
         int q = accuracyToQuality(accuracyPercent, completed);
+        boolean success = completed && accuracyPercent >= 90;
         for (Long verseId : verseIds) {
             VerseProgress p = progressRepository.findByVerseIdAndUserId(verseId, userId)
                     .orElseGet(() -> {
@@ -59,6 +63,14 @@ public class SpacedRepetitionService {
                     });
             Instant now = Instant.now();
             p.setLastPracticedAt(now);
+            if (success && practiceMode != null && !practiceMode.isBlank()) {
+                switch (practiceMode.toLowerCase()) {
+                    case "full" -> p.setFullCount(p.getFullCount() + 1);
+                    case "alternating" -> p.setAlternatingCount(p.getAlternatingCount() + 1);
+                    case "blank" -> p.setBlankCount(p.getBlankCount() + 1);
+                    default -> { /* ignore unknown mode */ }
+                }
+            }
             if (incrementInterval) {
                 if (q < 3) {
                     p.setRepetitionCount(0);
@@ -87,6 +99,24 @@ public class SpacedRepetitionService {
             prev = prev * ef;
         }
         return Math.min(MAX_INTERVAL_DAYS, Math.max(1, Math.round(prev)));
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, VersePracticeStatsDto> getPracticeStats(Long userId, List<Long> verseIds) {
+        if (verseIds == null || verseIds.isEmpty()) {
+            return Map.of();
+        }
+        List<VerseProgress> progressList = progressRepository.findByVerseIdInAndUserId(verseIds, userId);
+        Map<Long, VersePracticeStatsDto> result = new HashMap<>();
+        for (Long verseId : verseIds) {
+            VersePracticeStatsDto stats = progressList.stream()
+                    .filter(p -> p.getVerseId().equals(verseId))
+                    .findFirst()
+                    .map(p -> new VersePracticeStatsDto(p.getFullCount(), p.getAlternatingCount(), p.getBlankCount()))
+                    .orElse(new VersePracticeStatsDto(0, 0, 0));
+            result.put(verseId, stats);
+        }
+        return result;
     }
 
     @Transactional(readOnly = true)

@@ -20,16 +20,16 @@ export function Header() {
   };
 
   return (
-    <header className="border-b bg-background relative z-[102]">
-      <div className="container mx-auto px-4 py-2 md:py-4">
-        <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
+    <header className="flex justify-between items-center border-b bg-background relative z-[102] w-full">
+      <div className="w-full max-w-7xl mx-auto px-4 py-2 md:py-4">
+        <div className="flex items-center justify-between w-full">
+          <Link to="/" className="flex items-center gap-2 shrink-0">
             <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
             <span className="font-semibold text-sm md:text-base lg:text-lg">Bible Memory</span>
           </Link>
 
           {/* Desktop Navigation - flex max-md:hidden for Edge compatibility (avoids hidden+md:flex specificity issues) */}
-          <nav className="flex max-md:hidden items-center gap-4">
+          <nav className="flex max-md:hidden items-center gap-2 shrink-0">
             <ThemeToggle />
             {user ? (
               <>

@@ -29,6 +29,15 @@ public class VerseProgress {
     @Column(name = "easiness_factor")
     private double easinessFactor;
 
+    @Column(name = "full_count", nullable = false, columnDefinition = "integer default 0")
+    private int fullCount = 0;
+
+    @Column(name = "alternating_count", nullable = false, columnDefinition = "integer default 0")
+    private int alternatingCount = 0;
+
+    @Column(name = "blank_count", nullable = false, columnDefinition = "integer default 0")
+    private int blankCount = 0;
+
     public Long getId() {
         return id;
     }
@@ -83,5 +92,29 @@ public class VerseProgress {
 
     public void setEasinessFactor(double easinessFactor) {
         this.easinessFactor = easinessFactor;
+    }
+
+    public int getFullCount() {
+        return fullCount;
+    }
+
+    public void setFullCount(int fullCount) {
+        this.fullCount = fullCount;
+    }
+
+    public int getAlternatingCount() {
+        return alternatingCount;
+    }
+
+    public void setAlternatingCount(int alternatingCount) {
+        this.alternatingCount = alternatingCount;
+    }
+
+    public int getBlankCount() {
+        return blankCount;
+    }
+
+    public void setBlankCount(int blankCount) {
+        this.blankCount = blankCount;
     }
 }

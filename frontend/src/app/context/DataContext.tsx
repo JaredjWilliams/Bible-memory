@@ -33,6 +33,12 @@ export interface Note {
   updatedAt: string;
 }
 
+export interface VersePracticeStats {
+  fullCount: number;
+  alternatingCount: number;
+  blankCount: number;
+}
+
 interface DataContextType {
   profiles: Profile[];
   currentProfile: Profile | null;
@@ -46,7 +52,8 @@ interface DataContextType {
   addVerse: (collectionId: string, reference: string, text: string, source?: string) => Promise<void>;
   addBulkVerses: (collectionId: string, range: string) => Promise<{ added: number; skipped: number }>;
   deleteVerse: (verseId: string) => Promise<void>;
-  recordPractice: (verseId: string, success: boolean, incrementInterval?: boolean) => Promise<void>;
+  recordPractice: (verseId: string, success: boolean, incrementInterval?: boolean, practiceMode?: 'full' | 'alternating' | 'blank') => Promise<void>;
+  getVersePracticeStats: (verseIds: string[]) => Promise<Record<string, VersePracticeStats>>;
   getDueVerses: (collectionId: string) => number;
   getNotes: (verseId: string) => Promise<Note[]>;
   createNote: (verseId: string, content: string) => Promise<Note>;
@@ -319,7 +326,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setVerses((prev) => prev.filter((v) => v.id !== verseId));
   };
 
-  const recordPractice = async (verseId: string, success: boolean, incrementInterval = false) => {
+  const recordPractice = async (
+    verseId: string,
+    success: boolean,
+    incrementInterval = false,
+    practiceMode?: 'full' | 'alternating' | 'blank'
+  ) => {
     if (!user) return;
     const verseIdNum = parseInt(verseId, 10);
     if (Number.isNaN(verseIdNum)) {
@@ -330,10 +342,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
       accuracy: success ? 100 : 0,
       completed: true,
       incrementInterval,
+      practiceMode: practiceMode ?? null,
     });
     loadDueVerses().catch(() => {
       // Refresh due count in background; don't fail the save
     });
+  };
+
+  const getVersePracticeStats = async (verseIds: string[]): Promise<Record<string, VersePracticeStats>> => {
+    if (!user || verseIds.length === 0) return {};
+    const ids = verseIds.map((id) => parseInt(id, 10)).filter((n) => !Number.isNaN(n));
+    if (ids.length === 0) return {};
+    const params = ids.map((id) => `verseIds=${id}`).join('&');
+    const raw = await api.get<Record<string, { fullCount: number; alternatingCount: number; blankCount: number }>>(
+      `/api/practice/stats?${params}`
+    );
+    const result: Record<string, VersePracticeStats> = {};
+    for (const [k, v] of Object.entries(raw ?? {})) {
+      result[k] = {
+        fullCount: v.fullCount ?? 0,
+        alternatingCount: v.alternatingCount ?? 0,
+        blankCount: v.blankCount ?? 0,
+      };
+    }
+    return result;
   };
 
   const getDueVerses = (collectionId: string): number => {
@@ -405,6 +437,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         addBulkVerses,
         deleteVerse,
         recordPractice,
+        getVersePracticeStats,
         getDueVerses,
         getNotes,
         createNote,

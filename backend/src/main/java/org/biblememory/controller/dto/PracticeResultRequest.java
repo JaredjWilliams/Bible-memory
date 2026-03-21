@@ -19,5 +19,8 @@ public record PracticeResultRequest(
         Boolean completed,
 
         /** When true, advance spaced-repetition interval. Only set when verse completed in blank mode on first try. Null/false = do not advance. */
-        Boolean incrementInterval
+        Boolean incrementInterval,
+
+        /** "full" | "alternating" | "blank" - which mode was used. Used for per-mode practice counting. */
+        String practiceMode
 ) {}

@@ -11,6 +11,8 @@ public interface VerseProgressRepository extends JpaRepository<VerseProgress, Lo
 
     Optional<VerseProgress> findByVerseIdAndUserId(Long verseId, Long userId);
 
+    List<VerseProgress> findByVerseIdInAndUserId(List<Long> verseIds, Long userId);
+
     List<VerseProgress> findByUserIdAndNextReviewAtLessThanEqualOrderByNextReviewAtAsc(Long userId, Instant instant);
 
     void deleteByVerseId(Long verseId);
