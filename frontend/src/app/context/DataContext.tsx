@@ -284,11 +284,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setVerses((prev) => prev.filter((v) => v.collectionId !== collectionId));
   };
 
-  const getVersesByCollection = (collectionId: string): Verse[] => {
+  const getVersesByCollection = useCallback((collectionId: string): Verse[] => {
     return verses
       .filter((v) => v.collectionId === collectionId)
       .sort((a, b) => a.order - b.order);
-  };
+  }, [verses]);
 
   const addVerse = async (collectionId: string, reference: string, text: string, source?: string) => {
     if (!user) return;
