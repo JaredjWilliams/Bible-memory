@@ -143,4 +143,37 @@ describe('TypingPractice', () => {
       expect(mockCreateNote).toHaveBeenCalledWith('1', 'My reflection');
     });
   });
+
+  it('completes verse without restart when saving note mid-typing in blank mode (issue #38)', async () => {
+    const user = userEvent.setup();
+    renderAtPractice('col1');
+
+    // Switch to blank mode
+    await user.click(screen.getByRole('radio', { name: /blank/i }));
+
+    // Type ~90% of verse (24 of 27 chars: "Look at the birds of the ")
+    const verseStart = 'Look at the birds of the ';
+    const verseEnd = 'air.';
+    const typingArea = screen.getByRole('textbox', { name: /type the verse/i });
+    await user.type(typingArea, verseStart);
+
+    // Open notes, add and save a note
+    await user.click(screen.getByRole('button', { name: /open notes/i }));
+    await user.type(screen.getByPlaceholderText(/Add a note/i), 'My reflection');
+    await user.click(screen.getByRole('button', { name: /^Save$/i }));
+
+    await vi.waitFor(() => {
+      expect(mockCreateNote).toHaveBeenCalledWith('1', 'My reflection');
+    });
+
+    // Focus verse input and type remaining characters
+    await user.click(typingArea);
+    await user.type(typingArea, verseEnd);
+
+    // Verse should complete (no restart) - recordPractice called, completion screen shown
+    await vi.waitFor(() => {
+      expect(mockRecordPractice).toHaveBeenCalledWith('1', expect.any(Boolean), expect.any(Boolean));
+    });
+    expect(await screen.findByText(/Practice Complete/i, {}, { timeout: 2000 })).toBeInTheDocument();
+  }, 5000);
 });

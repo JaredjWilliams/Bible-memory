@@ -34,8 +34,10 @@ export function TypingPractice() {
   const [editingContent, setEditingContent] = useState<Record<string, string>>({});
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [syncForceKey, setSyncForceKey] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const noteInputRef = useRef<HTMLTextAreaElement>(null);
+  const isComposingRef = useRef(false);
 
   // Derive practiceVerses and currentVerse early so useEffects can reference them
   const practiceVerses = verseIdParam
@@ -68,6 +70,14 @@ export function TypingPractice() {
     const timer = setTimeout(() => inputRef.current?.focus(), 0);
     return () => clearTimeout(timer);
   }, [currentVerseIndex, verses.length]);
+
+  // Refocus verse input after we force re-sync (reject spurious event)
+  useEffect(() => {
+    if (syncForceKey > 0) {
+      const timer = setTimeout(() => inputRef.current?.focus(), 0);
+      return () => clearTimeout(timer);
+    }
+  }, [syncForceKey]);
 
   // Load notes when current verse changes
   useEffect(() => {
@@ -196,7 +206,23 @@ export function TypingPractice() {
   const targetText = currentVerse?.text || '';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newText = normalizeForCompare(e.target.value);
+    const rawValue = e.target.value;
+    const newText = normalizeForCompare(rawValue);
+
+    // Reject spurious onChange: value must be valid edit (append or delete at end only).
+    const isValidEdit =
+      newText === typedText ||
+      typedText.startsWith(newText) ||
+      newText.startsWith(typedText);
+
+    if (!isValidEdit) {
+      setSyncForceKey((k) => k + 1);
+      return;
+    }
+
+    if (isComposingRef.current) {
+      return;
+    }
 
     if (!startTime && newText.length === 1) {
       setStartTime(Date.now());
@@ -455,9 +481,21 @@ export function TypingPractice() {
                 ))}
                 <input
                   ref={inputRef}
+                  key={syncForceKey}
                   type="text"
                   value={typedText}
                   onChange={handleInputChange}
+                  onCompositionStart={() => { isComposingRef.current = true; }}
+                  onCompositionEnd={(e: React.CompositionEvent<HTMLInputElement>) => {
+                    isComposingRef.current = false;
+                    const finalText = normalizeForCompare((e.target as HTMLInputElement).value);
+                    if (finalText.length <= targetText.length) {
+                      setTypedText(finalText);
+                    }
+                  }}
+                  onBlur={() => {
+                    isComposingRef.current = false;
+                  }}
                   onKeyDown={(e) => {
                     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Backspace'].includes(e.key)) {
                       e.preventDefault();
