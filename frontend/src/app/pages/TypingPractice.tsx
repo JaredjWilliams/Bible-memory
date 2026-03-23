@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { useData, Verse, Note } from '../context/DataContext';
+import { normalizeForCompare, quotesMatch } from '../../lib/typing-practice-utils';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { Card, CardContent } from '../components/ui/card';
@@ -11,19 +12,6 @@ import { ArrowLeft, StickyNote, Trash2, Plus, Check } from 'lucide-react';
 import { motion } from 'motion/react';
 
 type PracticeMode = 'full' | 'alternating' | 'blank';
-
-/** Treat straight and curly quotes as equivalent when comparing typed vs target. */
-function quotesMatch(a: string, b: string): boolean {
-  if (a === b) return true;
-  const quoteVariants = [
-    ['"', '\u201C', '\u201D'], // straight, left curly, right curly double
-    ["'", '\u2018', '\u2019'], // straight, left curly, right curly single
-  ];
-  for (const group of quoteVariants) {
-    if (group.includes(a) && group.includes(b)) return true;
-  }
-  return false;
-}
 
 export function TypingPractice() {
   const { collectionId } = useParams<{ collectionId: string }>();
@@ -208,7 +196,7 @@ export function TypingPractice() {
   const targetText = currentVerse?.text || '';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newText = e.target.value;
+    const newText = normalizeForCompare(e.target.value);
 
     if (!startTime && newText.length === 1) {
       setStartTime(Date.now());

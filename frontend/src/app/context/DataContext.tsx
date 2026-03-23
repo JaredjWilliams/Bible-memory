@@ -340,7 +340,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return dueVerses.filter((v) => String(v.collectionId) === collectionId).length;
   };
 
-  const getNotes = async (verseId: string): Promise<Note[]> => {
+  const getNotes = useCallback(async (verseId: string): Promise<Note[]> => {
     if (!user) return [];
     const verseIdNum = parseInt(verseId, 10);
     if (Number.isNaN(verseIdNum)) return [];
@@ -352,9 +352,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       createdAt: d.createdAt,
       updatedAt: d.updatedAt,
     }));
-  };
+  }, [user]);
 
-  const createNote = async (verseId: string, content: string): Promise<Note> => {
+  const createNote = useCallback(async (verseId: string, content: string): Promise<Note> => {
     if (!user) throw new Error('Not authenticated');
     const verseIdNum = parseInt(verseId, 10);
     if (Number.isNaN(verseIdNum)) throw new Error('Invalid verse ID');
@@ -366,9 +366,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       createdAt: dto.createdAt,
       updatedAt: dto.updatedAt,
     };
-  };
+  }, [user]);
 
-  const updateNote = async (noteId: string, content: string): Promise<Note> => {
+  const updateNote = useCallback(async (noteId: string, content: string): Promise<Note> => {
     if (!user) throw new Error('Not authenticated');
     const noteIdNum = parseInt(noteId, 10);
     if (Number.isNaN(noteIdNum)) throw new Error('Invalid note ID');
@@ -380,14 +380,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
       createdAt: dto.createdAt,
       updatedAt: dto.updatedAt,
     };
-  };
+  }, [user]);
 
-  const deleteNote = async (noteId: string): Promise<void> => {
+  const deleteNote = useCallback(async (noteId: string): Promise<void> => {
     if (!user) return;
     const noteIdNum = parseInt(noteId, 10);
     if (Number.isNaN(noteIdNum)) return;
     await api.delete(`/api/notes/${noteIdNum}`);
-  };
+  }, [user]);
 
   return (
     <DataContext.Provider
