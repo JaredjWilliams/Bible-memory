@@ -50,9 +50,9 @@ describe('TypingPractice', () => {
     vi.clearAllMocks();
     mockUseData.mockReturnValue({
       collections: [
-        { id: 'col1', name: 'Test Collection', profileId: '1' },
+        { id: 'col1', name: 'Test Collection', profileId: '1', parentCollectionId: null },
       ],
-      getVersesByCollection: (id: string) => (id === 'col1' ? [mockVerse] : []),
+      getVersesByCollectionSubtree: (id: string) => (id === 'col1' ? [mockVerse] : []),
       recordPractice: mockRecordPractice,
       getNotes: mockGetNotes,
       createNote: mockCreateNote,
@@ -64,7 +64,7 @@ describe('TypingPractice', () => {
   it('shows Collection not found when collectionId is invalid', () => {
     mockUseData.mockReturnValue({
       collections: [],
-      getVersesByCollection: () => [],
+      getVersesByCollectionSubtree: () => [],
       recordPractice: vi.fn(),
       getNotes: vi.fn(),
       createNote: vi.fn(),
@@ -78,8 +78,8 @@ describe('TypingPractice', () => {
 
   it('shows No verses when collection has no verses', () => {
     mockUseData.mockReturnValue({
-      collections: [{ id: 'col1', name: 'Test', profileId: '1' }],
-      getVersesByCollection: () => [],
+      collections: [{ id: 'col1', name: 'Test', profileId: '1', parentCollectionId: null }],
+      getVersesByCollectionSubtree: () => [],
       recordPractice: vi.fn(),
       getNotes: vi.fn(),
       createNote: vi.fn(),

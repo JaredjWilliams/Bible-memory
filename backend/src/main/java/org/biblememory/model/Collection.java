@@ -23,6 +23,14 @@ public class Collection {
     @Column(nullable = false, name = "created_at")
     private Instant createdAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_collection_id")
+    private Collection parent;
+
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("createdAt ASC")
+    private List<Collection> children = new ArrayList<>();
+
     @OneToMany(mappedBy = "collection", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("orderIndex ASC")
     private List<Verse> verses = new ArrayList<>();
@@ -70,5 +78,21 @@ public class Collection {
 
     public void setVerses(List<Verse> verses) {
         this.verses = verses;
+    }
+
+    public Collection getParent() {
+        return parent;
+    }
+
+    public void setParent(Collection parent) {
+        this.parent = parent;
+    }
+
+    public List<Collection> getChildren() {
+        return children;
+    }
+
+    public void setChildren(List<Collection> children) {
+        this.children = children;
     }
 }

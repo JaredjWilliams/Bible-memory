@@ -39,7 +39,8 @@ public class CollectionController {
         if (userId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        Collection collection = collectionService.create(request.profileId(), userId, request.name());
+        Collection collection = collectionService.create(
+                request.profileId(), userId, request.name(), request.parentCollectionId());
         if (collection == null) {
             return ResponseEntity.notFound().build();
         }
@@ -61,6 +62,7 @@ public class CollectionController {
     }
 
     private CollectionDto toDto(Collection c) {
-        return new CollectionDto(c.getId(), c.getName(), c.getCreatedAt());
+        Long parentId = c.getParent() != null ? c.getParent().getId() : null;
+        return new CollectionDto(c.getId(), c.getName(), c.getCreatedAt(), parentId);
     }
 }

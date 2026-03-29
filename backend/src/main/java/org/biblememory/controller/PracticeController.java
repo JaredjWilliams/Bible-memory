@@ -4,20 +4,25 @@ import jakarta.validation.Valid;
 import org.biblememory.controller.dto.DueVerseDto;
 import org.biblememory.controller.dto.PracticeResultRequest;
 import org.biblememory.model.Verse;
+import org.biblememory.service.CollectionService;
 import org.biblememory.service.SpacedRepetitionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/practice")
 public class PracticeController {
 
     private final SpacedRepetitionService spacedRepetitionService;
+    private final CollectionService collectionService;
 
-    public PracticeController(SpacedRepetitionService spacedRepetitionService) {
+    public PracticeController(SpacedRepetitionService spacedRepetitionService,
+                              CollectionService collectionService) {
         this.spacedRepetitionService = spacedRepetitionService;
+        this.collectionService = collectionService;
     }
 
     @PostMapping("/result")
@@ -43,8 +48,17 @@ public class PracticeController {
             return ResponseEntity.status(401).build();
         }
         List<Verse> due = spacedRepetitionService.getVersesDueForReview(userId);
+        final Set<Long> allowedCollectionIds;
+        if (collectionId == null) {
+            allowedCollectionIds = null;
+        } else {
+            allowedCollectionIds = collectionService.getSubtreeCollectionIdsIncludingRoot(collectionId, userId);
+            if (allowedCollectionIds.isEmpty()) {
+                return ResponseEntity.ok(List.of());
+            }
+        }
         List<DueVerseDto> dtos = due.stream()
-                .filter(v -> collectionId == null || v.getCollection().getId().equals(collectionId))
+                .filter(v -> allowedCollectionIds == null || allowedCollectionIds.contains(v.getCollection().getId()))
                 .map(v -> new DueVerseDto(v.getId(), v.getCollection().getId(), v.getReference(), v.getText(), v.getOrderIndex(), v.getSource(), v.getCreatedAt()))
                 .toList();
         return ResponseEntity.ok(dtos);

@@ -7,7 +7,10 @@ import { CollectionDetail } from './CollectionDetail';
 const mockAddVerse = vi.fn().mockResolvedValue(undefined);
 const mockAddBulkVerses = vi.fn().mockResolvedValue({ added: 2, skipped: 0 });
 const mockDeleteVerse = vi.fn().mockResolvedValue(undefined);
+const mockCreateCollection = vi.fn().mockResolvedValue(undefined);
 const mockGetVersesByCollection = vi.fn();
+const mockGetVersesByCollectionSubtree = vi.fn();
+const mockGetDueVerses = vi.fn(() => 0);
 const mockUseData = vi.fn();
 
 vi.mock('../context/DataContext', () => ({
@@ -45,19 +48,26 @@ describe('CollectionDetail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseData.mockReturnValue({
-      collections: [{ id: 'c1', name: 'Romans 8', profileId: '1' }],
+      collections: [{ id: 'c1', name: 'Romans 8', profileId: '1', parentCollectionId: null }],
       getVersesByCollection: mockGetVersesByCollection,
+      getVersesByCollectionSubtree: mockGetVersesByCollectionSubtree,
+      getDueVerses: mockGetDueVerses,
+      createCollection: mockCreateCollection,
       addVerse: mockAddVerse,
       addBulkVerses: mockAddBulkVerses,
       deleteVerse: mockDeleteVerse,
     });
     mockGetVersesByCollection.mockReturnValue([]);
+    mockGetVersesByCollectionSubtree.mockReturnValue([]);
   });
 
   it('shows Collection not found when collectionId is invalid', () => {
     mockUseData.mockReturnValue({
-      collections: [{ id: 'c1', name: 'Romans 8', profileId: '1' }],
+      collections: [{ id: 'c1', name: 'Romans 8', profileId: '1', parentCollectionId: null }],
       getVersesByCollection: vi.fn(),
+      getVersesByCollectionSubtree: vi.fn(() => []),
+      getDueVerses: vi.fn(() => 0),
+      createCollection: vi.fn(),
       addVerse: vi.fn(),
       addBulkVerses: vi.fn(),
       deleteVerse: vi.fn(),
@@ -70,6 +80,9 @@ describe('CollectionDetail', () => {
 
   it('renders verses and add verse UI when collection exists', () => {
     mockGetVersesByCollection.mockReturnValue([
+      { id: 'v1', reference: 'Romans 8:1', text: 'There is therefore now no condemnation.' },
+    ]);
+    mockGetVersesByCollectionSubtree.mockReturnValue([
       { id: 'v1', reference: 'Romans 8:1', text: 'There is therefore now no condemnation.' },
     ]);
     renderCollectionDetail('c1');
@@ -108,6 +121,9 @@ describe('CollectionDetail', () => {
     mockGetVersesByCollection.mockReturnValue([
       { id: 'v1', reference: 'Romans 8:1', text: 'There is therefore now no condemnation.' },
     ]);
+    mockGetVersesByCollectionSubtree.mockReturnValue([
+      { id: 'v1', reference: 'Romans 8:1', text: 'There is therefore now no condemnation.' },
+    ]);
     const user = userEvent.setup();
     renderCollectionDetail('c1');
 
@@ -120,5 +136,18 @@ describe('CollectionDetail', () => {
     await user.click(screen.getByRole('button', { name: /^delete$/i }));
 
     expect(mockDeleteVerse).toHaveBeenCalledWith('v1');
+  });
+
+  it('calls createCollection with parent when adding a sub-collection', async () => {
+    const user = userEvent.setup();
+    renderCollectionDetail('c1');
+
+    await user.type(
+      screen.getByPlaceholderText(/new sub-collection name/i),
+      'Chapter 1'
+    );
+    await user.click(screen.getByRole('button', { name: /^add$/i }));
+
+    expect(mockCreateCollection).toHaveBeenCalledWith('Chapter 1', 'c1');
   });
 });

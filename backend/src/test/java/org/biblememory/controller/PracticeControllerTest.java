@@ -3,6 +3,7 @@ package org.biblememory.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.biblememory.security.JwtService;
 import org.biblememory.security.WithUserId;
+import org.biblememory.service.CollectionService;
 import org.biblememory.service.SpacedRepetitionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,9 +16,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -36,6 +39,9 @@ class PracticeControllerTest {
 
     @MockBean
     private SpacedRepetitionService spacedRepetitionService;
+
+    @MockBean
+    private CollectionService collectionService;
 
     @MockBean
     private JwtService jwtService;
@@ -157,6 +163,7 @@ class PracticeControllerTest {
     @Test
     @WithUserId
     void getDueVerses_returns200WithCollectionFilter() throws Exception {
+        when(collectionService.getSubtreeCollectionIdsIncludingRoot(5L, 1L)).thenReturn(Set.of(5L, 7L));
         mockMvc.perform(get("/api/practice/due").param("collectionId", "5"))
                 .andExpect(status().isOk());
     }

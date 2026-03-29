@@ -7,5 +7,6 @@ public record CreateCollectionRequest(
         @NotNull(message = "Profile ID is required")
         Long profileId,
         @NotBlank(message = "Name is required")
-        String name
+        String name,
+        Long parentCollectionId
 ) {}

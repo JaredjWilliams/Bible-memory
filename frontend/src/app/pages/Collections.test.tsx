@@ -54,8 +54,8 @@ describe('Collections', () => {
     mockUseData.mockReturnValue({
       currentProfile: { id: '1', name: 'Default' },
       collections: [
-        { id: 'c1', name: 'Romans 8', profileId: '1' },
-        { id: 'c2', name: 'Psalm 23', profileId: '1' },
+        { id: 'c1', name: 'Romans 8', profileId: '1', parentCollectionId: null },
+        { id: 'c2', name: 'Psalm 23', profileId: '1', parentCollectionId: null },
       ],
       createCollection: mockCreateCollection,
       deleteCollection: mockDeleteCollection,
@@ -78,11 +78,28 @@ describe('Collections', () => {
     expect(mockCreateCollection).toHaveBeenCalledWith('New Collection');
   });
 
+  it('lists only root collections, not nested ones', () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'u1', username: 'test' } });
+    mockUseData.mockReturnValue({
+      currentProfile: { id: '1', name: 'Default' },
+      collections: [
+        { id: 'c1', name: 'Matthew', profileId: '1', parentCollectionId: null },
+        { id: 'c2', name: 'Chapter 1', profileId: '1', parentCollectionId: 'c1' },
+      ],
+      createCollection: mockCreateCollection,
+      deleteCollection: mockDeleteCollection,
+    });
+    renderCollections();
+
+    expect(screen.getByText('Matthew')).toBeInTheDocument();
+    expect(screen.queryByText('Chapter 1')).not.toBeInTheDocument();
+  });
+
   it('opens delete dialog and calls deleteCollection on confirm', async () => {
     mockUseAuth.mockReturnValue({ user: { id: 'u1', username: 'test' } });
     mockUseData.mockReturnValue({
       currentProfile: { id: '1', name: 'Default' },
-      collections: [{ id: 'c1', name: 'Romans 8', profileId: '1' }],
+      collections: [{ id: 'c1', name: 'Romans 8', profileId: '1', parentCollectionId: null }],
       createCollection: mockCreateCollection,
       deleteCollection: mockDeleteCollection,
     });
@@ -93,7 +110,7 @@ describe('Collections', () => {
     const buttons = within(row!).getAllByRole('button');
     await user.click(buttons[1]);
 
-    expect(screen.getByText(/are you sure you want to delete/i)).toBeInTheDocument();
+    expect(screen.getByText(/nested sub-collections/i)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /^delete$/i }));
 
     expect(mockDeleteCollection).toHaveBeenCalledWith('c1');
