@@ -20,9 +20,19 @@ const VERSE_NUMBERS = Array.from({ length: 176 }, (_, i) => i + 1);
 export function CollectionDetail() {
   const { collectionId } = useParams<{ collectionId: string }>();
   const navigate = useNavigate();
-  const { collections, getVersesByCollection, addVerse, addBulkVerses, deleteVerse } = useData();
+  const {
+    collections,
+    getVersesByCollection,
+    getVersesByCollectionSubtree,
+    getDueVerses,
+    createCollection,
+    addVerse,
+    addBulkVerses,
+    deleteVerse,
+  } = useData();
 
   const [activeAddTab, setActiveAddTab] = useState('manual');
+  const [newSubCollectionName, setNewSubCollectionName] = useState('');
   const [manualReference, setManualReference] = useState('');
   const [manualText, setManualText] = useState('');
   const [esvBook, setEsvBook] = useState('John');
@@ -33,8 +43,30 @@ export function CollectionDetail() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [verseToDelete, setVerseToDelete] = useState<string | null>(null);
 
-  const collection = collectionId ? collections.find(c => c.id === collectionId) : null;
+  const collection = collectionId ? collections.find((c) => c.id === collectionId) : null;
   const verses = collectionId ? getVersesByCollection(collectionId) : [];
+  const subtreeVerses = collectionId ? getVersesByCollectionSubtree(collectionId) : [];
+  const parentCollection =
+    collection?.parentCollectionId != null
+      ? collections.find((c) => c.id === collection.parentCollectionId) ?? null
+      : null;
+  const childCollections = collectionId
+    ? collections.filter((c) => c.parentCollectionId === collectionId)
+    : [];
+
+  const handleCreateSubCollection = async () => {
+    if (!collectionId || !newSubCollectionName.trim()) {
+      toast.error('Please enter a sub-collection name');
+      return;
+    }
+    try {
+      await createCollection(newSubCollectionName.trim(), collectionId);
+      setNewSubCollectionName('');
+      toast.success('Sub-collection created');
+    } catch (e) {
+      toast.error('Failed to create sub-collection');
+    }
+  };
 
   if (!collectionId || !collection) {
     return (
@@ -132,25 +164,114 @@ export function CollectionDetail() {
         {/* Header: mobile = back row, then title+play row (play right); desktop = back | title left, play right */}
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/collections')} className="order-1 sm:order-1 self-start">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                parentCollection
+                  ? navigate(`/collections/${parentCollection.id}`)
+                  : navigate('/collections')
+              }
+              className="order-1 sm:order-1 self-start"
+            >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              {parentCollection ? parentCollection.name : 'Collections'}
             </Button>
-            <div className="flex items-center justify-between w-full gap-4 order-2 sm:order-2">
-              <h1 className="text-lg sm:text-xl font-bold">{collection.name}</h1>
-              {verses.length > 0 && (
-                <Button size="icon" className="sm:hidden shrink-0" onClick={() => navigate(`/collections/${collectionId}/practice`)} title="Typing">
-                  <Play className="h-4 w-4" />
-                </Button>
+            <div className="flex flex-col gap-0.5 order-2 sm:order-2 w-full">
+              {parentCollection && (
+                <div className="text-xs text-muted-foreground">
+                  <button
+                    type="button"
+                    className="hover:underline"
+                    onClick={() => navigate('/collections')}
+                  >
+                    Collections
+                  </button>
+                  <span aria-hidden="true"> / </span>
+                  <button
+                    type="button"
+                    className="hover:underline"
+                    onClick={() => navigate(`/collections/${parentCollection.id}`)}
+                  >
+                    {parentCollection.name}
+                  </button>
+                  <span aria-hidden="true"> / </span>
+                  <span className="text-foreground font-medium">{collection.name}</span>
+                </div>
               )}
+              <div className="flex items-center justify-between w-full gap-4">
+                <h1 className="text-lg sm:text-xl font-bold">{collection.name}</h1>
+                {subtreeVerses.length > 0 && (
+                  <Button
+                    size="icon"
+                    className="sm:hidden shrink-0"
+                    onClick={() => navigate(`/collections/${collectionId}/practice`)}
+                    title="Typing"
+                  >
+                    <Play className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
-          {verses.length > 0 && (
-            <Button size="icon" className="max-sm:hidden shrink-0" onClick={() => navigate(`/collections/${collectionId}/practice`)} title="Typing">
+          {subtreeVerses.length > 0 && (
+            <Button
+              size="icon"
+              className="max-sm:hidden shrink-0"
+              onClick={() => navigate(`/collections/${collectionId}/practice`)}
+              title="Typing"
+            >
               <Play className="h-4 w-4" />
             </Button>
           )}
         </div>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Sub-collections</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                placeholder="New sub-collection name (e.g. Chapter 1)"
+                value={newSubCollectionName}
+                onChange={(e) => setNewSubCollectionName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreateSubCollection();
+                }}
+              />
+              <Button type="button" onClick={handleCreateSubCollection}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add
+              </Button>
+            </div>
+            {childCollections.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No sub-collections yet.</p>
+            ) : (
+              <ul className="space-y-2">
+                {childCollections.map((child) => {
+                  const due = getDueVerses(child.id);
+                  return (
+                    <li key={child.id}>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/collections/${child.id}`)}
+                        className="w-full flex items-center justify-between p-3 border rounded-lg hover:bg-muted text-left transition-colors"
+                      >
+                        <span className="font-medium text-sm sm:text-base">{child.name}</span>
+                        {due > 0 && (
+                          <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                            {due} due
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Two-column layout on desktop: Add Verses (left) | Verses list (right) */}
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">

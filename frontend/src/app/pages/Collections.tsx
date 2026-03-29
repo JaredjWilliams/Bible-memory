@@ -69,7 +69,7 @@ export function Collections() {
   };
 
   const currentCollections = collections.filter(
-    c => c.profileId === currentProfile?.id
+    (c) => c.profileId === currentProfile?.id && c.parentCollectionId == null
   );
 
   return (
@@ -80,7 +80,7 @@ export function Collections() {
           <CardHeader>
             <CardTitle className="text-base">My Collections</CardTitle>
             <CardDescription className="text-sm">
-              Create collections to group verses by topic or study plan
+              Create top-level collections here; open one to add sub-collections (e.g. chapters).
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -141,8 +141,8 @@ export function Collections() {
           <DialogHeader>
             <DialogTitle>Delete Collection</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this collection? This will also delete
-              all verses in this collection. This action cannot be undone.
+              This removes this collection, any nested sub-collections, and all verses inside them.
+              This cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

@@ -13,6 +13,8 @@ export interface Collection {
   id: string;
   name: string;
   profileId: string;
+  /** null = top-level collection */
+  parentCollectionId: string | null;
 }
 
 export interface Verse {
@@ -40,9 +42,11 @@ interface DataContextType {
   selectProfile: (profileId: string) => void;
   deleteProfile: (profileId: string) => Promise<void>;
   collections: Collection[];
-  createCollection: (name: string) => Promise<void>;
+  createCollection: (name: string, parentCollectionId?: string | null) => Promise<void>;
   deleteCollection: (collectionId: string) => Promise<void>;
   getVersesByCollection: (collectionId: string) => Verse[];
+  /** Verses in this collection and all nested sub-collections (for practice). */
+  getVersesByCollectionSubtree: (collectionId: string) => Verse[];
   addVerse: (collectionId: string, reference: string, text: string, source?: string) => Promise<void>;
   addBulkVerses: (collectionId: string, range: string) => Promise<{ added: number; skipped: number }>;
   deleteVerse: (verseId: string) => Promise<void>;
@@ -67,6 +71,7 @@ interface CollectionDto {
   id: number;
   name: string;
   createdAt: string;
+  parentCollectionId: number | null;
 }
 
 interface VerseDto {
@@ -111,7 +116,31 @@ function toCollection(dto: CollectionDto, profileId: string): Collection {
     id: String(dto.id),
     name: dto.name,
     profileId,
+    parentCollectionId:
+      dto.parentCollectionId != null ? String(dto.parentCollectionId) : null,
   };
+}
+
+/** All collection IDs in the subtree rooted at `rootId`, including `rootId`. */
+export function collectDescendantCollectionIds(
+  rootId: string,
+  collections: Collection[]
+): Set<string> {
+  const byParent = new Map<string | null, string[]>();
+  for (const c of collections) {
+    const p = c.parentCollectionId ?? null;
+    if (!byParent.has(p)) byParent.set(p, []);
+    byParent.get(p)!.push(c.id);
+  }
+  const out = new Set<string>();
+  const stack = [rootId];
+  while (stack.length) {
+    const id = stack.pop()!;
+    if (out.has(id)) continue;
+    out.add(id);
+    for (const child of byParent.get(id) ?? []) stack.push(child);
+  }
+  return out;
 }
 
 function toVerse(dto: VerseDto, collectionId: string): Verse {
@@ -267,21 +296,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const createCollection = async (name: string) => {
+  const createCollection = async (name: string, parentCollectionId?: string | null) => {
     if (!user || !currentProfile) return;
-    const dto = await api.post<CollectionDto>('/api/collections', {
+    const body: {
+      profileId: number;
+      name: string;
+      parentCollectionId?: number;
+    } = {
       profileId: Number(currentProfile.id),
       name,
-    });
+    };
+    if (parentCollectionId != null && parentCollectionId !== '') {
+      body.parentCollectionId = Number(parentCollectionId);
+    }
+    const dto = await api.post<CollectionDto>('/api/collections', body);
     const newCollection = toCollection(dto, currentProfile.id);
     setCollections((prev) => [...prev, newCollection]);
   };
 
   const deleteCollection = async (collectionId: string) => {
     if (!user) return;
+    const removedIds = collectDescendantCollectionIds(collectionId, collections);
     await api.delete(`/api/collections/${collectionId}`);
-    setCollections((prev) => prev.filter((c) => c.id !== collectionId));
-    setVerses((prev) => prev.filter((v) => v.collectionId !== collectionId));
+    setCollections((prev) => prev.filter((c) => !removedIds.has(c.id)));
+    setVerses((prev) => prev.filter((v) => !removedIds.has(v.collectionId)));
+    loadDueVerses().catch(() => {
+      // keep local state consistent with server
+    });
   };
 
   const getVersesByCollection = useCallback((collectionId: string): Verse[] => {
@@ -289,6 +330,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .filter((v) => v.collectionId === collectionId)
       .sort((a, b) => a.order - b.order);
   }, [verses]);
+
+  const getVersesByCollectionSubtree = useCallback(
+    (collectionId: string): Verse[] => {
+      const ids = collectDescendantCollectionIds(collectionId, collections);
+      return verses
+        .filter((v) => ids.has(v.collectionId))
+        .sort((a, b) => {
+          if (a.collectionId !== b.collectionId) {
+            return a.collectionId.localeCompare(b.collectionId);
+          }
+          return a.order - b.order;
+        });
+    },
+    [collections, verses]
+  );
 
   const addVerse = async (collectionId: string, reference: string, text: string, source?: string) => {
     if (!user) return;
@@ -336,9 +392,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const getDueVerses = (collectionId: string): number => {
-    return dueVerses.filter((v) => String(v.collectionId) === collectionId).length;
-  };
+  const getDueVerses = useCallback(
+    (collectionId: string): number => {
+      const ids = collectDescendantCollectionIds(collectionId, collections);
+      return dueVerses.filter((v) => ids.has(String(v.collectionId))).length;
+    },
+    [collections, dueVerses]
+  );
 
   const getNotes = useCallback(async (verseId: string): Promise<Note[]> => {
     if (!user) return [];
@@ -401,6 +461,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         createCollection,
         deleteCollection,
         getVersesByCollection,
+        getVersesByCollectionSubtree,
         addVerse,
         addBulkVerses,
         deleteVerse,

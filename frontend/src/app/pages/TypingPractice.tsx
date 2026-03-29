@@ -18,7 +18,15 @@ export function TypingPractice() {
   const [searchParams] = useSearchParams();
   const verseIdParam = searchParams.get('verseId');
   const navigate = useNavigate();
-  const { collections, getVersesByCollection, recordPractice, getNotes, createNote, updateNote, deleteNote } = useData();
+  const {
+    collections,
+    getVersesByCollectionSubtree,
+    recordPractice,
+    getNotes,
+    createNote,
+    updateNote,
+    deleteNote,
+  } = useData();
 
   const [verses, setVerses] = useState<Verse[]>([]);
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
@@ -58,9 +66,9 @@ export function TypingPractice() {
 
   useEffect(() => {
     if (collectionId) {
-      setVerses(getVersesByCollection(collectionId));
+      setVerses(getVersesByCollectionSubtree(collectionId));
     }
-  }, [collectionId, getVersesByCollection]);
+  }, [collectionId, getVersesByCollectionSubtree]);
 
   useEffect(() => {
     resetPractice();

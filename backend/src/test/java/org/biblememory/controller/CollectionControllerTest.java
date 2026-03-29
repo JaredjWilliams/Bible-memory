@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Instant;
 import java.util.List;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,6 +41,10 @@ class CollectionControllerTest {
     private JwtService jwtService;
 
     private static Collection createCollection(Long id, Long profileId, String name) {
+        return createCollection(id, profileId, name, null);
+    }
+
+    private static Collection createCollection(Long id, Long profileId, String name, Collection parent) {
         Profile profile = new Profile();
         profile.setId(profileId);
         profile.setUserId(1L);
@@ -48,6 +53,7 @@ class CollectionControllerTest {
         c.setProfile(profile);
         c.setName(name);
         c.setCreatedAt(Instant.now());
+        c.setParent(parent);
         return c;
     }
 
@@ -60,7 +66,8 @@ class CollectionControllerTest {
         mockMvc.perform(get("/api/collections").param("profileId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].name").value("My Collection"));
+                .andExpect(jsonPath("$[0].name").value("My Collection"))
+                .andExpect(jsonPath("$[0].parentCollectionId").value(nullValue()));
 
         verify(collectionService).findByProfileId(1L, 1L);
     }
@@ -75,16 +82,17 @@ class CollectionControllerTest {
     @WithUserId
     void create_returns201WhenAuthenticated() throws Exception {
         Collection col = createCollection(1L, 1L, "New Collection");
-        when(collectionService.create(1L, 1L, "New Collection")).thenReturn(col);
+        when(collectionService.create(1L, 1L, "New Collection", null)).thenReturn(col);
 
         mockMvc.perform(post("/api/collections")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"profileId\":1,\"name\":\"New Collection\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("New Collection"));
+                .andExpect(jsonPath("$.name").value("New Collection"))
+                .andExpect(jsonPath("$.parentCollectionId").value(nullValue()));
 
-        verify(collectionService).create(1L, 1L, "New Collection");
+        verify(collectionService).create(1L, 1L, "New Collection", null);
     }
 
     @Test
@@ -98,7 +106,7 @@ class CollectionControllerTest {
     @Test
     @WithUserId
     void create_returns404WhenProfileNotFound() throws Exception {
-        when(collectionService.create(999L, 1L, "Collection")).thenReturn(null);
+        when(collectionService.create(999L, 1L, "Collection", null)).thenReturn(null);
 
         mockMvc.perform(post("/api/collections")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -113,6 +121,34 @@ class CollectionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"profileId\":1,\"name\":\"\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithUserId
+    void create_returns201WithParentWhenNested() throws Exception {
+        Collection parent = createCollection(5L, 1L, "Parent");
+        Collection child = createCollection(2L, 1L, "Child", parent);
+        when(collectionService.create(1L, 1L, "Child", 5L)).thenReturn(child);
+
+        mockMvc.perform(post("/api/collections")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"profileId\":1,\"name\":\"Child\",\"parentCollectionId\":5}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(2))
+                .andExpect(jsonPath("$.parentCollectionId").value(5));
+
+        verify(collectionService).create(1L, 1L, "Child", 5L);
+    }
+
+    @Test
+    @WithUserId
+    void create_returns404WhenParentInvalid() throws Exception {
+        when(collectionService.create(1L, 1L, "Child", 99L)).thenReturn(null);
+
+        mockMvc.perform(post("/api/collections")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"profileId\":1,\"name\":\"Child\",\"parentCollectionId\":99}"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
