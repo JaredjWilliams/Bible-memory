@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { api } from '../../lib/api';
 import { BOOKS, CHAPTERS_PER_BOOK } from '../../lib/bible-books';
 import { Button } from '../components/ui/button';
@@ -6,6 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { VerseActionPanel } from '../components/VerseActionPanel';
+import { ReaderNotesPanel } from '../components/ReaderNotesPanel';
+import { VerseNotesDropdown } from '../components/VerseNotesDropdown';
+import { formatVerseRange, expandVerseRange } from '../../lib/verse-utils';
+import { fetchChapterNotes, type ReaderNote } from '../../lib/reader-notes-api';
 
 /** Split passage text by paragraph breaks (\n\n). */
 function parseParagraphs(text: string): string[] {
@@ -16,9 +21,7 @@ function parseParagraphs(text: string): string[] {
 /** ESV section headings: end with |, or short paragraph with no verse markers. */
 function isHeading(para: string): boolean {
   const trimmed = para.trim();
-  // Format 1: ends with pipe (e.g. "Moses Flees to Midian| ")
   if (/^[^\[\]]+\|\s*$/.test(trimmed)) return true;
-  // Format 2: no verse numbers [n], short text (likely standalone heading)
   if (!/\[\d+\]/.test(trimmed) && trimmed.length < 80) return true;
   return false;
 }
@@ -28,20 +31,29 @@ function formatHeading(text: string): string {
   return text.replace(/\|\s*$/, '').trim();
 }
 
-/** Render a paragraph with inline verse numbers ([1], [2], etc.) as superscripts. */
-function renderParagraphWithInlineVerses(paragraph: string): React.ReactNode {
-  const segments = paragraph.split(/(\[\d+\])\s*/);
-  return segments.map((seg, i) => {
+interface VerseSegment {
+  type: 'sup' | 'text';
+  verseNum: number | null;
+  content: string;
+}
+
+/** Parse a paragraph into segments with associated verse numbers. */
+function parseVerseSegments(paragraph: string): VerseSegment[] {
+  const raw = paragraph.split(/(\[\d+\])\s*/);
+  const segments: VerseSegment[] = [];
+  let currentVerse: number | null = null;
+
+  for (const seg of raw) {
+    if (!seg) continue;
     const numMatch = seg.match(/\[(\d+)\]/);
     if (numMatch) {
-      return (
-        <sup key={i} className="text-muted-foreground font-semibold align-super text-[8px] sm:text-[9px] mr-0.5">
-          {numMatch[1]}
-        </sup>
-      );
+      currentVerse = parseInt(numMatch[1], 10);
+      segments.push({ type: 'sup', verseNum: currentVerse, content: numMatch[1] });
+    } else if (seg.trim()) {
+      segments.push({ type: 'text', verseNum: currentVerse, content: seg });
     }
-    return <span key={i}>{seg}</span>;
-  });
+  }
+  return segments;
 }
 
 export function BibleReader() {
@@ -52,8 +64,27 @@ export function BibleReader() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [selectedVerses, setSelectedVerses] = useState<Set<number>>(new Set());
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [notesPanelOpen, setNotesPanelOpen] = useState(false);
+  const [noteVerseRange, setNoteVerseRange] = useState('');
+  const [viewingVerse, setViewingVerse] = useState<number | null>(null);
+  const [viewingAnchorEl, setViewingAnchorEl] = useState<HTMLElement | null>(null);
+  const [chapterNotes, setChapterNotes] = useState<ReaderNote[]>([]);
+  const verseRefsMap = useRef<Map<number, HTMLElement>>(new Map());
+
   const maxChapter = CHAPTERS_PER_BOOK[selectedBook] || 50;
   const paragraphs = passageText ? parseParagraphs(passageText) : [];
+
+  const versesWithNotes = useMemo(() => {
+    const set = new Set<number>();
+    for (const note of chapterNotes) {
+      for (const v of expandVerseRange(note.verseRange)) {
+        set.add(v);
+      }
+    }
+    return set;
+  }, [chapterNotes]);
 
   useEffect(() => {
     const query = `${selectedBook} ${currentChapter}`;
@@ -83,11 +114,68 @@ export function BibleReader() {
       .finally(() => setIsLoading(false));
   }, [selectedBook, currentChapter]);
 
+  // Clear selection on chapter/book change and pre-fetch notes
+  useEffect(() => {
+    setSelectedVerses(new Set());
+    setAnchorEl(null);
+    setViewingVerse(null);
+    setViewingAnchorEl(null);
+    verseRefsMap.current.clear();
+    fetchChapterNotes(selectedBook, currentChapter)
+      .then(setChapterNotes)
+      .catch(() => setChapterNotes([]));
+  }, [selectedBook, currentChapter]);
+
+  const refreshChapterNotes = useCallback(() => {
+    fetchChapterNotes(selectedBook, currentChapter)
+      .then(setChapterNotes)
+      .catch(() => {});
+  }, [selectedBook, currentChapter]);
+
+  const handleVerseClick = useCallback((e: React.MouseEvent, verseNum: number | null) => {
+    if (!verseNum) return;
+
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      setSelectedVerses((prev) => {
+        const next = new Set(prev);
+        if (next.has(verseNum)) {
+          next.delete(verseNum);
+        } else {
+          next.add(verseNum);
+        }
+        return next;
+      });
+      const el = e.currentTarget as HTMLElement;
+      setAnchorEl(el);
+      verseRefsMap.current.set(verseNum, el);
+    } else {
+      if (viewingVerse === verseNum) {
+        setViewingVerse(null);
+        setViewingAnchorEl(null);
+      } else {
+        setViewingVerse(verseNum);
+        setViewingAnchorEl(e.currentTarget as HTMLElement);
+      }
+    }
+  }, [viewingVerse]);
+
+  const handleDismiss = useCallback(() => {
+    setSelectedVerses(new Set());
+    setAnchorEl(null);
+  }, []);
+
+  const handleOpenNotes = useCallback(() => {
+    const sorted = Array.from(selectedVerses).sort((a, b) => a - b);
+    setViewingVerse(null);
+    setNoteVerseRange(formatVerseRange(sorted));
+    setNotesPanelOpen(true);
+  }, [selectedVerses]);
+
   const handlePreviousChapter = () => {
     if (currentChapter > 1) {
       setCurrentChapter(currentChapter - 1);
     } else {
-      // Go to previous book's last chapter
       const currentBookIndex = BOOKS.indexOf(selectedBook);
       if (currentBookIndex > 0) {
         const previousBook = BOOKS[currentBookIndex - 1];
@@ -101,7 +189,6 @@ export function BibleReader() {
     if (currentChapter < maxChapter) {
       setCurrentChapter(currentChapter + 1);
     } else {
-      // Go to next book's first chapter
       const currentBookIndex = BOOKS.indexOf(selectedBook);
       if (currentBookIndex < BOOKS.length - 1) {
         const nextBook = BOOKS[currentBookIndex + 1];
@@ -120,8 +207,39 @@ export function BibleReader() {
     setCurrentChapter(parseInt(chapter));
   };
 
+  const renderParagraphWithInlineVerses = (paragraph: string) => {
+    const segments = parseVerseSegments(paragraph);
+    return segments.map((seg, i) => {
+      if (seg.type === 'sup') {
+        return (
+          <sup key={i} className="text-muted-foreground font-semibold align-super text-[8px] sm:text-[9px] mr-0.5">
+            {seg.content}
+          </sup>
+        );
+      }
+      const isSelected = seg.verseNum !== null && selectedVerses.has(seg.verseNum);
+      const hasNotes = seg.verseNum !== null && versesWithNotes.has(seg.verseNum);
+      let className = 'cursor-pointer';
+      if (isSelected) {
+        className = 'underline decoration-primary decoration-2 underline-offset-2 cursor-pointer';
+      } else if (hasNotes) {
+        className = 'border-b border-dashed border-primary/40 cursor-pointer';
+      }
+      return (
+        <span
+          key={i}
+          data-verse={seg.verseNum ?? undefined}
+          className={className}
+          onClick={(e) => handleVerseClick(e, seg.verseNum)}
+        >
+          {seg.content}
+        </span>
+      );
+    });
+  };
+
   return (
-    <div className="container mx-auto px-4 pt-4 pb-8 sm:py-8 text-sm sm:text-base">
+    <div className="container mx-auto px-4 pt-4 pb-8 sm:py-8 text-sm sm:text-base relative">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Navigation Controls */}
         <Card className="gap-2">
@@ -269,6 +387,12 @@ export function BibleReader() {
                     </p>
                   );
                 })}
+
+                {selectedVerses.size > 0 && (
+                  <p className="text-xs text-muted-foreground text-center pt-2">
+                    Ctrl+Click to select/deselect verses
+                  </p>
+                )}
               </motion.div>
             ) : (
               <p className="text-muted-foreground py-4">No verses to display.</p>
@@ -302,6 +426,38 @@ export function BibleReader() {
           </div>
         </div>
       </div>
+
+      {/* Floating action panel near selected verses */}
+      <VerseActionPanel
+        selectedVerses={selectedVerses}
+        anchorEl={anchorEl}
+        onOpenNotes={handleOpenNotes}
+        onDismiss={handleDismiss}
+      />
+
+      {/* Inline notes dropdown on normal click */}
+      {viewingVerse !== null && viewingAnchorEl && (
+        <VerseNotesDropdown
+          verseNum={viewingVerse}
+          anchorEl={viewingAnchorEl}
+          notes={chapterNotes}
+          onClose={() => {
+            setViewingVerse(null);
+            setViewingAnchorEl(null);
+          }}
+        />
+      )}
+
+      {/* Notes side panel (opened via Ctrl+Click action panel) */}
+      <ReaderNotesPanel
+        open={notesPanelOpen}
+        onOpenChange={setNotesPanelOpen}
+        book={selectedBook}
+        chapter={currentChapter}
+        verseRange={noteVerseRange}
+        preloadedNotes={chapterNotes}
+        onNotesChanged={refreshChapterNotes}
+      />
     </div>
   );
 }
