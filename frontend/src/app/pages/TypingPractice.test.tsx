@@ -97,6 +97,36 @@ describe('TypingPractice', () => {
     expect(screen.getByText(/Click above and type the verse/i)).toBeInTheDocument();
   });
 
+  it('uses normalized target when verse text contains newlines (no Enter required)', async () => {
+    const user = userEvent.setup();
+    const verse = {
+      ...mockVerse,
+      text: 'Look at the birds\nof the air.',
+    };
+    mockUseData.mockReturnValue({
+      collections: [
+        { id: 'col1', name: 'Test Collection', profileId: '1', parentCollectionId: null },
+      ],
+      getVersesByCollectionSubtree: (id: string) => (id === 'col1' ? [verse] : []),
+      recordPractice: mockRecordPractice,
+      getNotes: mockGetNotes,
+      createNote: mockCreateNote,
+      updateNote: mockUpdateNote,
+      deleteNote: mockDeleteNote,
+    });
+
+    renderAtPractice('col1');
+
+    const typingArea = screen.getByRole('textbox', { name: /type the verse/i });
+    expect(typingArea).toHaveAttribute('maxlength', String('Look at the birds of the air.'.length));
+
+    await user.type(typingArea, 'Look at the birds of the air.');
+
+    await vi.waitFor(() => {
+      expect(mockRecordPractice).toHaveBeenCalledWith('1', expect.any(Boolean), expect.any(Boolean));
+    });
+  });
+
   it('calls recordPractice when verse is typed correctly', async () => {
     const user = userEvent.setup();
     renderAtPractice('col1');

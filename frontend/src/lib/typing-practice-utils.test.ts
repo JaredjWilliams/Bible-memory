@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeForCompare, quotesMatch } from './typing-practice-utils';
+import { normalizeForCompare, normalizeVerseTextForTyping, quotesMatch } from './typing-practice-utils';
 
 describe('normalizeForCompare', () => {
   it('normalizes to NFC form', () => {
@@ -15,6 +15,27 @@ describe('normalizeForCompare', () => {
 
   it('leaves ASCII unchanged', () => {
     expect(normalizeForCompare('hello')).toBe('hello');
+  });
+});
+
+describe('normalizeVerseTextForTyping', () => {
+  it('replaces newlines and CRLF with a single space between word groups', () => {
+    expect(normalizeVerseTextForTyping('Line one\nLine two')).toBe('Line one Line two');
+    expect(normalizeVerseTextForTyping('Line one\r\nLine two')).toBe('Line one Line two');
+    expect(normalizeVerseTextForTyping('A\rB')).toBe('A B');
+  });
+
+  it('collapses repeated whitespace including tabs', () => {
+    expect(normalizeVerseTextForTyping('a \n  \tb')).toBe('a b');
+  });
+
+  it('trims leading and trailing whitespace', () => {
+    expect(normalizeVerseTextForTyping('  hello\n')).toBe('hello');
+  });
+
+  it('returns empty string for empty or whitespace-only input', () => {
+    expect(normalizeVerseTextForTyping('')).toBe('');
+    expect(normalizeVerseTextForTyping(' \n\t ')).toBe('');
   });
 });
 

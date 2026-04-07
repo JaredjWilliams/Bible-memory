@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { useData, Verse, Note } from '../context/DataContext';
-import { normalizeForCompare, quotesMatch } from '../../lib/typing-practice-utils';
+import { normalizeForCompare, normalizeVerseTextForTyping, quotesMatch } from '../../lib/typing-practice-utils';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { Card, CardContent } from '../components/ui/card';
@@ -55,6 +55,11 @@ export function TypingPractice() {
       })()
     : verses;
   const currentVerse = practiceVerses[currentVerseIndex];
+
+  const targetText = useMemo(
+    () => normalizeVerseTextForTyping(currentVerse?.text ?? ''),
+    [currentVerse?.text]
+  );
 
   const resetPractice = useCallback(() => {
     setCurrentVerseIndex(0);
@@ -211,8 +216,6 @@ export function TypingPractice() {
     );
   }
 
-  const targetText = currentVerse?.text || '';
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value;
     const newText = normalizeForCompare(rawValue);
@@ -330,10 +333,13 @@ export function TypingPractice() {
     );
   };
 
-  const totalCharsInPractice = practiceVerses.reduce((sum, v) => sum + v.text.length, 0);
+  const totalCharsInPractice = practiceVerses.reduce(
+    (sum, v) => sum + normalizeVerseTextForTyping(v.text).length,
+    0
+  );
   const completedChars = practiceVerses
     .slice(0, currentVerseIndex)
-    .reduce((sum, v) => sum + v.text.length, 0);
+    .reduce((sum, v) => sum + normalizeVerseTextForTyping(v.text).length, 0);
 
   const correctCount = targetText.length > 0
     ? [...typedText].filter((c, i) => quotesMatch(c, targetText[i])).length

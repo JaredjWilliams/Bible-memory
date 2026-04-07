@@ -470,7 +470,7 @@ export function CollectionDetail() {
                           .map((para) => para.trim())
                           .filter(Boolean)
                           .map((para, i) => (
-                            <p key={i} className="text-foreground leading-relaxed text-sm sm:text-base break-words">
+                            <p key={i} className="text-foreground leading-relaxed text-sm sm:text-base break-words whitespace-pre-wrap">
                               {para}
                             </p>
                           ))}

@@ -382,7 +382,7 @@ export function BibleReader() {
                     ) : null;
                   }
                   return (
-                    <p key={idx} className="text-foreground leading-relaxed text-sm sm:text-base">
+                    <p key={idx} className="text-foreground leading-relaxed text-sm sm:text-base whitespace-pre-wrap">
                       {renderParagraphWithInlineVerses(para)}
                     </p>
                   );

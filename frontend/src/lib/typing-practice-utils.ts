@@ -3,6 +3,17 @@ export function normalizeForCompare(s: string): string {
   return s.normalize('NFC');
 }
 
+/**
+ * Single-line target for typing practice: poetry stored with newlines should not require Enter.
+ * Replaces line breaks with spaces and collapses whitespace, then NFC.
+ */
+export function normalizeVerseTextForTyping(text: string): string {
+  if (!text) return '';
+  const withSpaces = text.replace(/\r\n|\r|\n/g, ' ');
+  const collapsed = withSpaces.replace(/\s+/g, ' ').trim();
+  return collapsed.normalize('NFC');
+}
+
 /** Treat straight and curly quotes as equivalent when comparing typed vs target. */
 export function quotesMatch(a: string, b: string): boolean {
   const na = normalizeForCompare(a);

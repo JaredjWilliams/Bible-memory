@@ -91,9 +91,40 @@ public class EsvPassageService {
         if (!readerMode) {
             text = text.replaceAll("(?m)^[^\\[\"]+\\|\\s*\"?", "");
         }
-        // Collapse multiple spaces/tabs but preserve newlines (paragraph breaks)
-        text = text.replaceAll("[ \\t]+", " ").trim();
+        // Collapse horizontal whitespace within each line but preserve leading indent (poetry / ESV indent-poetry)
+        text = collapseHorizontalWhitespaceKeepLineLeadingIndent(text).trim();
         return text;
+    }
+
+    /**
+     * Collapse runs of spaces and tabs to a single space after any leading indent on each line.
+     * Preserves ESV poetry indentation (multiple leading spaces per line) while normalizing interior gaps.
+     */
+    static String collapseHorizontalWhitespaceKeepLineLeadingIndent(String text) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        String[] lines = text.split("\\R", -1);
+        StringBuilder sb = new StringBuilder(text.length());
+        for (int li = 0; li < lines.length; li++) {
+            if (li > 0) {
+                sb.append('\n');
+            }
+            String line = lines[li];
+            int i = 0;
+            int n = line.length();
+            while (i < n) {
+                char c = line.charAt(i);
+                if (c != ' ' && c != '\t') {
+                    break;
+                }
+                i++;
+            }
+            String lead = line.substring(0, i);
+            String rest = line.substring(i).replaceAll("[ \\t]+", " ");
+            sb.append(lead).append(rest);
+        }
+        return sb.toString();
     }
 
     public record EsvResponse(String[] passages) {}
