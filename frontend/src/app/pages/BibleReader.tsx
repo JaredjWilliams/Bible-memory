@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, Fragment } from 'react';
 import { api } from '../../lib/api';
 import { BOOKS, CHAPTERS_PER_BOOK } from '../../lib/bible-books';
 import { Button } from '../components/ui/button';
@@ -38,6 +38,16 @@ interface VerseSegment {
   content: string;
 }
 
+/** Normalize API newline variants so split matches ESV / Java `\R` line breaks. */
+function normalizePoetryNewlines(text: string): string {
+  return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\u2028/g, '\n');
+}
+
+/** True when a poetry line has visible text (ESV may use space-only lines for layout). */
+function lineHasRenderableText(line: string): boolean {
+  return line.trim().length > 0;
+}
+
 /** Parse a paragraph into segments with associated verse numbers. */
 function parseVerseSegments(paragraph: string): VerseSegment[] {
   const raw = paragraph.split(/(\[\d+\])\s*/);
@@ -67,7 +77,7 @@ export function BibleReader() {
   }
   const [selectedBook, setSelectedBook] = useState(initialReaderRef.current.book);
   const [currentChapter, setCurrentChapter] = useState(initialReaderRef.current.chapter);
-  const [showNavigation, setShowNavigation] = useState(true);
+  const [showNavigation, setShowNavigation] = useState(false);
   const [passageText, setPassageText] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -216,7 +226,8 @@ export function BibleReader() {
   };
 
   const handleChapterChange = (chapter: string) => {
-    setCurrentChapter(parseInt(chapter));
+    setCurrentChapter(parseInt(chapter, 10));
+    setShowNavigation(false);
   };
 
   const renderParagraphWithInlineVerses = (paragraph: string) => {
@@ -231,21 +242,35 @@ export function BibleReader() {
       }
       const isSelected = seg.verseNum !== null && selectedVerses.has(seg.verseNum);
       const hasNotes = seg.verseNum !== null && versesWithNotes.has(seg.verseNum);
-      let className = 'cursor-pointer';
-      if (isSelected) {
-        className = 'underline decoration-primary decoration-2 underline-offset-2 cursor-pointer';
-      } else if (hasNotes) {
-        className = 'border-b border-dashed border-primary/40 cursor-pointer';
-      }
+      const lines = normalizePoetryNewlines(seg.content).split('\n');
       return (
-        <span
-          key={i}
-          data-verse={seg.verseNum ?? undefined}
-          className={className}
-          onClick={(e) => handleVerseClick(e, seg.verseNum)}
-        >
-          {seg.content}
-        </span>
+        <Fragment key={i}>
+          {lines.map((line, lineIdx) => {
+            const showDecoration = lineHasRenderableText(line);
+            let className = 'cursor-pointer';
+            if (showDecoration && isSelected) {
+              className = 'underline decoration-primary decoration-2 underline-offset-2 cursor-pointer';
+            } else if (showDecoration && hasNotes) {
+              className = 'border-b border-dashed border-primary/40 cursor-pointer';
+            }
+            return (
+              <Fragment key={lineIdx}>
+                {lineIdx > 0 && <br />}
+                {line.length > 0 ? (
+                  <span
+                    data-verse={seg.verseNum ?? undefined}
+                    className={className}
+                    onClick={(e) => handleVerseClick(e, seg.verseNum)}
+                  >
+                    {line}
+                  </span>
+                ) : (
+                  <br />
+                )}
+              </Fragment>
+            );
+          })}
+        </Fragment>
       );
     });
   };
