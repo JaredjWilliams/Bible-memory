@@ -11,6 +11,7 @@ import { ReaderNotesPanel } from '../components/ReaderNotesPanel';
 import { VerseNotesDropdown } from '../components/VerseNotesDropdown';
 import { formatVerseRange, expandVerseRange } from '../../lib/verse-utils';
 import { fetchChapterNotes, type ReaderNote } from '../../lib/reader-notes-api';
+import { loadReaderPosition, saveReaderPosition } from '../../lib/reader-position';
 
 /** Split passage text by paragraph breaks (\n\n). */
 function parseParagraphs(text: string): string[] {
@@ -57,8 +58,15 @@ function parseVerseSegments(paragraph: string): VerseSegment[] {
 }
 
 export function BibleReader() {
-  const [selectedBook, setSelectedBook] = useState('Genesis');
-  const [currentChapter, setCurrentChapter] = useState(1);
+  const initialReaderRef = useRef<{ book: string; chapter: number } | null>(null);
+  if (initialReaderRef.current === null) {
+    initialReaderRef.current =
+      typeof window !== 'undefined'
+        ? (loadReaderPosition() ?? { book: 'Genesis', chapter: 1 })
+        : { book: 'Genesis', chapter: 1 };
+  }
+  const [selectedBook, setSelectedBook] = useState(initialReaderRef.current.book);
+  const [currentChapter, setCurrentChapter] = useState(initialReaderRef.current.chapter);
   const [showNavigation, setShowNavigation] = useState(true);
   const [passageText, setPassageText] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -85,6 +93,10 @@ export function BibleReader() {
     }
     return set;
   }, [chapterNotes]);
+
+  useEffect(() => {
+    saveReaderPosition(selectedBook, currentChapter);
+  }, [selectedBook, currentChapter]);
 
   useEffect(() => {
     const query = `${selectedBook} ${currentChapter}`;
