@@ -42,7 +42,7 @@ interface DataContextType {
   selectProfile: (profileId: string) => void;
   deleteProfile: (profileId: string) => Promise<void>;
   collections: Collection[];
-  createCollection: (name: string, parentCollectionId?: string | null) => Promise<void>;
+  createCollection: (name: string, parentCollectionId?: string | null) => Promise<Collection | undefined>;
   deleteCollection: (collectionId: string) => Promise<void>;
   getVersesByCollection: (collectionId: string) => Verse[];
   /** Verses in this collection and all nested sub-collections (for practice). */
@@ -296,8 +296,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const createCollection = async (name: string, parentCollectionId?: string | null) => {
-    if (!user || !currentProfile) return;
+  const createCollection = async (
+    name: string,
+    parentCollectionId?: string | null
+  ): Promise<Collection | undefined> => {
+    if (!user || !currentProfile) return undefined;
     const body: {
       profileId: number;
       name: string;
@@ -312,6 +315,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const dto = await api.post<CollectionDto>('/api/collections', body);
     const newCollection = toCollection(dto, currentProfile.id);
     setCollections((prev) => [...prev, newCollection]);
+    return newCollection;
   };
 
   const deleteCollection = async (collectionId: string) => {

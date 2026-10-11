@@ -483,6 +483,8 @@ export function BibleReader() {
       {viewingVerse !== null && viewingAnchorEl && (
         <VerseNotesDropdown
           verseNum={viewingVerse}
+          book={selectedBook}
+          chapter={currentChapter}
           anchorEl={viewingAnchorEl}
           notes={chapterNotes}
           onAddNote={handleAddNoteForVerse}
