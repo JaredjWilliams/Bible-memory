@@ -216,12 +216,11 @@ export function CollectionDetail() {
           </div>
           {subtreeVerses.length > 0 && (
             <Button
-              size="icon"
               className="max-sm:hidden shrink-0"
               onClick={() => navigate(`/collections/${collectionId}/practice`)}
-              title="Typing"
             >
               <Play className="h-4 w-4" />
+              Practice all
             </Button>
           )}
         </div>

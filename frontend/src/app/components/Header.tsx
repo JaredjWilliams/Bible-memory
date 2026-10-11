@@ -1,16 +1,19 @@
-import React from 'react';
-import { Link } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/button';
 import { ThemeToggle } from './ThemeToggle';
+import { cn } from './ui/utils';
 import { BookOpen, LogOut, Menu, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export function Header() {
   const { user, logout } = useAuth();
+  const { pathname } = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const readActive = pathname === '/read' || pathname.startsWith('/read/');
+  const memorizeActive = pathname === '/collections' || pathname.startsWith('/collections/');
 
   useEffect(() => {
     const header = headerRef.current;
@@ -40,58 +43,67 @@ export function Header() {
     setMobileMenuOpen(false);
   };
 
+  const navLinkClass = (active: boolean) =>
+    cn('h-9 px-3', active && 'bg-accent text-accent-foreground');
+
   return (
     <header ref={headerRef} className="border-b bg-background relative z-[102]">
-      <div className="container mx-auto px-4 py-2 md:py-4">
-        <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
-            <span className="font-semibold text-sm md:text-base lg:text-lg">Bible Memory</span>
+      <div className="container mx-auto px-4">
+        <div className="flex h-16 items-center justify-between gap-4">
+          <Link to="/" className="flex items-center gap-2.5 shrink-0">
+            <span className="flex size-8 items-center justify-center rounded-md bg-blue-600/15 text-blue-600">
+              <BookOpen className="size-4" />
+            </span>
+            <span className="text-base font-semibold tracking-tight">Bible Memory</span>
           </Link>
 
-          {/* Desktop Navigation - flex max-md:hidden for Edge compatibility (avoids hidden+md:flex specificity issues) */}
-          <nav className="flex max-md:hidden items-center gap-4">
-            <ThemeToggle />
-            {user ? (
-              <>
-                <Link to="/read">
-                  <Button variant="ghost">Read</Button>
-                </Link>
-                <Link to="/collections">
-                  <Button variant="ghost">Collections</Button>
-                </Link>
+          <div className="flex items-center gap-2">
+            {/* Desktop Navigation - flex max-md:hidden for Edge compatibility (avoids hidden+md:flex specificity issues) */}
+            <nav className="flex max-md:hidden items-center">
+              {user ? (
+                <>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" asChild className={navLinkClass(readActive)}>
+                      <Link to="/read">Read</Link>
+                    </Button>
+                    <Button variant="ghost" asChild className={navLinkClass(memorizeActive)}>
+                      <Link to="/collections">Memorize</Link>
+                    </Button>
+                  </div>
+                  <div className="mx-3 h-5 w-px bg-border" aria-hidden="true" />
+                  <div className="flex items-center gap-2">
+                    <span className="px-1 text-sm text-muted-foreground">{user.username}</span>
+                    <ThemeToggle />
+                    <Button variant="outline" className="h-9 px-3" onClick={logout}>
+                      Logout
+                    </Button>
+                  </div>
+                </>
+              ) : (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">{user.username}</span>
-                  <Button variant="outline" size="sm" onClick={logout}>
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logout
+                  <ThemeToggle />
+                  <Button variant="ghost" asChild className="h-9 px-3">
+                    <Link to="/login">Login</Link>
+                  </Button>
+                  <Button asChild className="h-9 px-3">
+                    <Link to="/signup">Sign Up</Link>
                   </Button>
                 </div>
-              </>
-            ) : (
-              <>
-                <Link to="/login">
-                  <Button variant="ghost">Login</Button>
-                </Link>
-                <Link to="/signup">
-                  <Button>Sign Up</Button>
-                </Link>
-              </>
-            )}
-          </nav>
+              )}
+            </nav>
 
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-1.5 relative z-[103] ml-auto"
-            onClick={toggleMobileMenu}
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </button>
+            <button
+              className="md:hidden inline-flex size-9 items-center justify-center rounded-md relative z-[103]"
+              onClick={toggleMobileMenu}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? (
+                <X className="size-5" />
+              ) : (
+                <Menu className="size-5" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation Menu */}
@@ -119,7 +131,7 @@ export function Header() {
                     </Link>
                     <Link to="/collections" onClick={closeMobileMenu} className="block">
                       <Button variant="ghost" className="w-full justify-start">
-                        Collections
+                        Memorize
                       </Button>
                     </Link>
                     <div className="px-3 py-2 text-sm text-muted-foreground border-t mt-2 pt-2">
