@@ -106,7 +106,11 @@ export function ReaderNotesPanel({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
+      <SheetContent
+        side="right"
+        overlayClassName="top-(--app-header-height)!"
+        className="w-full sm:max-w-md flex flex-col top-(--app-header-height)! h-auto!"
+      >
         <SheetHeader>
           <SheetTitle>Notes &mdash; {book} {chapter}</SheetTitle>
           <SheetDescription>Your notes for this chapter</SheetDescription>

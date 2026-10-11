@@ -4,12 +4,33 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/button';
 import { ThemeToggle } from './ThemeToggle';
 import { BookOpen, LogOut, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export function Header() {
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+
+    const updateHeight = () => {
+      document.documentElement.style.setProperty(
+        '--app-header-height',
+        `${header.offsetHeight}px`,
+      );
+    };
+
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(header);
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty('--app-header-height');
+    };
+  }, []);
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -20,7 +41,7 @@ export function Header() {
   };
 
   return (
-    <header className="border-b bg-background relative z-[102]">
+    <header ref={headerRef} className="border-b bg-background relative z-[102]">
       <div className="container mx-auto px-4 py-2 md:py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">

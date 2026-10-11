@@ -194,6 +194,13 @@ export function BibleReader() {
     setNotesPanelOpen(true);
   }, [selectedVerses]);
 
+  const handleAddNoteForVerse = useCallback((verseNum: number) => {
+    setViewingVerse(null);
+    setViewingAnchorEl(null);
+    setNoteVerseRange(String(verseNum));
+    setNotesPanelOpen(true);
+  }, []);
+
   const handlePreviousChapter = () => {
     if (currentChapter > 1) {
       setCurrentChapter(currentChapter - 1);
@@ -478,6 +485,7 @@ export function BibleReader() {
           verseNum={viewingVerse}
           anchorEl={viewingAnchorEl}
           notes={chapterNotes}
+          onAddNote={handleAddNoteForVerse}
           onClose={() => {
             setViewingVerse(null);
             setViewingAnchorEl(null);

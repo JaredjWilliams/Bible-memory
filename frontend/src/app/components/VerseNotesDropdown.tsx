@@ -1,16 +1,19 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { format } from 'date-fns';
+import { StickyNote } from 'lucide-react';
 import { type ReaderNote } from '../../lib/reader-notes-api';
 import { expandVerseRange } from '../../lib/verse-utils';
+import { Button } from './ui/button';
 
 interface VerseNotesDropdownProps {
   verseNum: number;
   anchorEl: HTMLElement | null;
   notes: ReaderNote[];
+  onAddNote: (verseNum: number) => void;
   onClose: () => void;
 }
 
-export function VerseNotesDropdown({ verseNum, anchorEl, notes, onClose }: VerseNotesDropdownProps) {
+export function VerseNotesDropdown({ verseNum, anchorEl, notes, onAddNote, onClose }: VerseNotesDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
 
@@ -54,9 +57,20 @@ export function VerseNotesDropdown({ verseNum, anchorEl, notes, onClose }: Verse
       className="absolute z-40 w-80 max-h-64 overflow-y-auto bg-popover border border-border rounded-lg shadow-lg p-3"
       style={{ top: position.top, left: position.left }}
     >
-      <p className="text-xs font-medium text-muted-foreground mb-2">
-        Notes for verse {verseNum}
-      </p>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <p className="text-xs font-medium text-muted-foreground">
+          Notes for verse {verseNum}
+        </p>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 text-muted-foreground hover:text-foreground shrink-0"
+          onClick={() => onAddNote(verseNum)}
+          aria-label={`Add note for verse ${verseNum}`}
+        >
+          <StickyNote className="h-3.5 w-3.5" />
+        </Button>
+      </div>
       {filteredNotes.length === 0 ? (
         <p className="text-xs text-muted-foreground py-2 text-center">
           No notes for this verse.
